@@ -74,3 +74,43 @@ export function useClearSchedule() {
     },
   });
 }
+
+export function useMoveScheduleEntry() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      entryId, 
+      newTimeSlotId, 
+      newRoomId 
+    }: { 
+      entryId: string; 
+      newTimeSlotId: string; 
+      newRoomId: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('schedule_entries')
+        .update({ 
+          time_slot_id: newTimeSlotId,
+          room_id: newRoomId 
+        })
+        .eq('id', entryId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
+      toast({ title: 'تم نقل المحاضرة بنجاح' });
+    },
+    onError: (error) => {
+      toast({ 
+        title: 'خطأ في نقل المحاضرة', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    },
+  });
+}
