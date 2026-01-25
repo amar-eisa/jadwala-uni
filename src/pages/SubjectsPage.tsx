@@ -30,6 +30,7 @@ import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject } fro
 import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { SubjectType, SUBJECT_TYPE_LABELS } from '@/types/database';
 
 export default function SubjectsPage() {
   const { data: subjects, isLoading } = useSubjects();
@@ -44,18 +45,22 @@ export default function SubjectsPage() {
     id: string; 
     name: string; 
     professor_id: string; 
-    group_id: string 
+    group_id: string;
+    type: SubjectType;
+    weekly_hours: number;
   } | null>(null);
   const [newSubject, setNewSubject] = useState({ 
     name: '', 
     professor_id: '', 
-    group_id: '' 
+    group_id: '',
+    type: 'theory' as SubjectType,
+    weekly_hours: 2
   });
 
   const handleAdd = async () => {
     if (!newSubject.name.trim() || !newSubject.professor_id || !newSubject.group_id) return;
     await createSubject.mutateAsync(newSubject);
-    setNewSubject({ name: '', professor_id: '', group_id: '' });
+    setNewSubject({ name: '', professor_id: '', group_id: '', type: 'theory', weekly_hours: 2 });
     setIsAddOpen(false);
   };
 
@@ -136,6 +141,32 @@ export default function SubjectsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>نوع المادة</Label>
+                  <Select
+                    value={newSubject.type}
+                    onValueChange={(value) => setNewSubject({ ...newSubject, type: value as SubjectType })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر نوع المادة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="theory">{SUBJECT_TYPE_LABELS.theory}</SelectItem>
+                      <SelectItem value="practical">{SUBJECT_TYPE_LABELS.practical}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weekly_hours">عدد الساعات الأسبوعية</Label>
+                  <Input
+                    id="weekly_hours"
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={newSubject.weekly_hours}
+                    onChange={(e) => setNewSubject({ ...newSubject, weekly_hours: parseInt(e.target.value) || 2 })}
+                  />
+                </div>
                 <Button onClick={handleAdd} disabled={createSubject.isPending} className="w-full">
                   {createSubject.isPending ? 'جاري الإضافة...' : 'إضافة'}
                 </Button>
@@ -169,6 +200,8 @@ export default function SubjectsPage() {
                   <TableRow>
                     <TableHead>الكود</TableHead>
                     <TableHead>الاسم</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>الساعات</TableHead>
                     <TableHead>الدكتور</TableHead>
                     <TableHead>المجموعة</TableHead>
                     <TableHead className="w-[100px]">إجراءات</TableHead>
@@ -179,6 +212,8 @@ export default function SubjectsPage() {
                     <TableRow key={subject.id}>
                       <TableCell className="font-mono text-sm">{subject.code}</TableCell>
                       <TableCell className="font-medium">{subject.name}</TableCell>
+                      <TableCell>{SUBJECT_TYPE_LABELS[subject.type]}</TableCell>
+                      <TableCell>{subject.weekly_hours}</TableCell>
                       <TableCell>{subject.professor?.name}</TableCell>
                       <TableCell>{subject.group?.name}</TableCell>
                       <TableCell>
@@ -190,7 +225,9 @@ export default function SubjectsPage() {
                               id: subject.id, 
                               name: subject.name,
                               professor_id: subject.professor_id,
-                              group_id: subject.group_id
+                              group_id: subject.group_id,
+                              type: subject.type,
+                              weekly_hours: subject.weekly_hours
                             })}
                           >
                             <Pencil className="h-4 w-4" />
@@ -263,6 +300,32 @@ export default function SubjectsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>نوع المادة</Label>
+                  <Select
+                    value={editingSubject.type}
+                    onValueChange={(value) => setEditingSubject({ ...editingSubject, type: value as SubjectType })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="theory">{SUBJECT_TYPE_LABELS.theory}</SelectItem>
+                      <SelectItem value="practical">{SUBJECT_TYPE_LABELS.practical}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-weekly-hours">عدد الساعات الأسبوعية</Label>
+                  <Input
+                    id="edit-weekly-hours"
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={editingSubject.weekly_hours}
+                    onChange={(e) => setEditingSubject({ ...editingSubject, weekly_hours: parseInt(e.target.value) || 2 })}
+                  />
                 </div>
                 <Button onClick={handleUpdate} disabled={updateSubject.isPending} className="w-full">
                   {updateSubject.isPending ? 'جاري التحديث...' : 'تحديث'}

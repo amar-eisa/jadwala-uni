@@ -134,7 +134,9 @@ export type Database = {
           id: string
           name: string
           professor_id: string
+          type: Database["public"]["Enums"]["subject_type"]
           updated_at: string
+          weekly_hours: number
         }
         Insert: {
           code: string
@@ -143,7 +145,9 @@ export type Database = {
           id?: string
           name: string
           professor_id: string
+          type?: Database["public"]["Enums"]["subject_type"]
           updated_at?: string
+          weekly_hours?: number
         }
         Update: {
           code?: string
@@ -152,7 +156,9 @@ export type Database = {
           id?: string
           name?: string
           professor_id?: string
+          type?: Database["public"]["Enums"]["subject_type"]
           updated_at?: string
+          weekly_hours?: number
         }
         Relationships: [
           {
@@ -215,6 +221,7 @@ export type Database = {
         | "friday"
         | "saturday"
       room_type: "lab" | "lecture"
+      subject_type: "theory" | "practical"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -352,6 +359,7 @@ export const Constants = {
         "saturday",
       ],
       room_type: ["lab", "lecture"],
+      subject_type: ["theory", "practical"],
     },
   },
 } as const
