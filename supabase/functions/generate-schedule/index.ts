@@ -11,6 +11,7 @@ interface Subject {
   professor_id: string;
   group_id: string;
   weekly_hours: number;
+  type: 'theory' | 'practical';
 }
 
 interface TimeSlot {
@@ -23,6 +24,7 @@ interface TimeSlot {
 interface Room {
   id: string;
   name: string;
+  type: 'lab' | 'lecture';
 }
 
 interface ScheduleEntry {
@@ -109,8 +111,12 @@ serve(async (req) => {
         const groupKey = `${subject.group_id}-${timeSlot.id}`;
         if (occupiedGroupSlots.has(groupKey)) continue;
 
+        // Filter rooms by type: theory → lecture, practical → lab
+        const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
+        const compatibleRooms = rooms.filter(r => r.type === requiredRoomType);
+        
         // Find least used available room (Load Balancing)
-        const sortedRooms = [...rooms].sort((a, b) => roomUsage[a.id] - roomUsage[b.id]);
+        const sortedRooms = [...compatibleRooms].sort((a, b) => roomUsage[a.id] - roomUsage[b.id]);
 
         for (const room of sortedRooms) {
           const roomKey = `${room.id}-${timeSlot.id}`;
@@ -138,7 +144,8 @@ serve(async (req) => {
       }
 
       if (scheduledCount < sessionsNeeded) {
-        console.warn(`Could only schedule ${scheduledCount}/${sessionsNeeded} sessions for subject ${subject.id}`);
+        const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
+        console.warn(`Could only schedule ${scheduledCount}/${sessionsNeeded} sessions for subject ${subject.id} (type: ${subject.type}, needs: ${requiredRoomType} rooms)`);
       }
     }
 
