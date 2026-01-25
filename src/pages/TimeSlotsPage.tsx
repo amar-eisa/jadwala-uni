@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -12,55 +13,46 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { useTimeSlots, useCreateTimeSlot, useUpdateTimeSlot, useDeleteTimeSlot } from '@/hooks/useTimeSlots';
+import { useTimeSlots, useCreateTimeSlot, useDeleteTimeSlot } from '@/hooks/useTimeSlots';
 import { DayOfWeek, DAY_LABELS } from '@/types/database';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Clock, Calendar, Settings } from 'lucide-react';
 
-const DAYS: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const DAYS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
 export default function TimeSlotsPage() {
   const { data: timeSlots, isLoading } = useTimeSlots();
   const createTimeSlot = useCreateTimeSlot();
-  const updateTimeSlot = useUpdateTimeSlot();
   const deleteTimeSlot = useDeleteTimeSlot();
 
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editingSlot, setEditingSlot] = useState<{ 
-    id: string; 
-    day: DayOfWeek; 
-    start_time: string; 
-    end_time: string 
-  } | null>(null);
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']);
+  const [breakDuration, setBreakDuration] = useState(5);
   const [newSlot, setNewSlot] = useState({ 
-    day: 'sunday' as DayOfWeek, 
-    start_time: '08:00', 
-    end_time: '09:00' 
+    name: '',
+    start_time: '', 
+    end_time: '' 
   });
 
-  const handleAdd = async () => {
-    await createTimeSlot.mutateAsync(newSlot);
-    setNewSlot({ day: 'sunday', start_time: '08:00', end_time: '09:00' });
-    setIsAddOpen(false);
+  const handleDayToggle = (day: DayOfWeek) => {
+    setSelectedDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
   };
 
-  const handleUpdate = async () => {
-    if (!editingSlot) return;
-    await updateTimeSlot.mutateAsync(editingSlot);
-    setEditingSlot(null);
+  const handleAddSlot = async () => {
+    if (!newSlot.start_time || !newSlot.end_time) return;
+    
+    // Create time slot for all selected days
+    for (const day of selectedDays) {
+      await createTimeSlot.mutateAsync({
+        day,
+        start_time: newSlot.start_time,
+        end_time: newSlot.end_time
+      });
+    }
+    
+    setNewSlot({ name: '', start_time: '', end_time: '' });
   };
 
   const handleDelete = async (id: string) => {
@@ -69,183 +61,217 @@ export default function TimeSlotsPage() {
     }
   };
 
+  const handleRestoreDefaults = () => {
+    setSelectedDays(['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']);
+    setBreakDuration(5);
+  };
+
   const formatTime = (time: string) => {
     return time.slice(0, 5);
   };
 
+  // Get unique time ranges (regardless of day)
+  const uniqueTimeRanges = timeSlots?.reduce((acc, slot) => {
+    const key = `${slot.start_time}-${slot.end_time}`;
+    if (!acc.find(s => `${s.start_time}-${s.end_time}` === key)) {
+      acc.push(slot);
+    }
+    return acc;
+  }, [] as typeof timeSlots) || [];
+
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">إدارة الفترات الزمنية</h1>
-            <p className="text-muted-foreground mt-1">تحديد أوقات المحاضرات المتاحة</p>
-          </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 ml-2" />
-                إضافة فترة
-              </Button>
-            </DialogTrigger>
-            <DialogContent dir="rtl">
-              <DialogHeader>
-                <DialogTitle>إضافة فترة زمنية جديدة</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>اليوم</Label>
-                  <Select
-                    value={newSlot.day}
-                    onValueChange={(value: DayOfWeek) => setNewSlot({ ...newSlot, day: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS.map((day) => (
-                        <SelectItem key={day} value={day}>
-                          {DAY_LABELS[day]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start">وقت البداية</Label>
-                    <Input
-                      id="start"
-                      type="time"
-                      value={newSlot.start_time}
-                      onChange={(e) => setNewSlot({ ...newSlot, start_time: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="end">وقت النهاية</Label>
-                    <Input
-                      id="end"
-                      type="time"
-                      value={newSlot.end_time}
-                      onChange={(e) => setNewSlot({ ...newSlot, end_time: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleAdd} disabled={createTimeSlot.isPending} className="w-full">
-                  {createTimeSlot.isPending ? 'جاري الإضافة...' : 'إضافة'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+        <div>
+          <h1 className="text-3xl font-bold">إدارة الفترات الزمنية</h1>
+          <p className="text-muted-foreground mt-1">تحديد أوقات المحاضرات المتاحة</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>قائمة الفترات الزمنية</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-center py-4">جاري التحميل...</p>
-            ) : timeSlots?.length === 0 ? (
-              <p className="text-center py-4 text-muted-foreground">لا توجد فترات زمنية بعد</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>اليوم</TableHead>
-                    <TableHead>وقت البداية</TableHead>
-                    <TableHead>وقت النهاية</TableHead>
-                    <TableHead className="w-[100px]">إجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {timeSlots?.map((slot) => (
-                    <TableRow key={slot.id}>
-                      <TableCell className="font-medium">{DAY_LABELS[slot.day]}</TableCell>
-                      <TableCell>{formatTime(slot.start_time)}</TableCell>
-                      <TableCell>{formatTime(slot.end_time)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingSlot({ 
-                              id: slot.id, 
-                              day: slot.day,
-                              start_time: formatTime(slot.start_time),
-                              end_time: formatTime(slot.end_time)
-                            })}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(slot.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {/* Top Section - Days & Settings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Work Days Card */}
+          <Card>
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center gap-2 text-primary">
+                <Calendar className="h-5 w-5" />
+                <CardTitle>أيام العمل</CardTitle>
+              </div>
+              <CardDescription>حدد الأيام التي تُعقد فيها المحاضرات</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {DAYS.map((day) => (
+                  <div key={day} className="flex items-center gap-2 justify-end">
+                    <Label htmlFor={day} className="cursor-pointer">
+                      {DAY_LABELS[day]}
+                    </Label>
+                    <Checkbox
+                      id={day}
+                      checked={selectedDays.includes(day)}
+                      onCheckedChange={() => handleDayToggle(day)}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="text-center text-sm text-primary font-medium pt-2 border-t">
+                الأيام المحددة: {selectedDays.length} أيام
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Edit Dialog */}
-        <Dialog open={!!editingSlot} onOpenChange={() => setEditingSlot(null)}>
-          <DialogContent dir="rtl">
-            <DialogHeader>
-              <DialogTitle>تعديل الفترة الزمنية</DialogTitle>
-            </DialogHeader>
-            {editingSlot && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>اليوم</Label>
-                  <Select
-                    value={editingSlot.day}
-                    onValueChange={(value: DayOfWeek) => setEditingSlot({ ...editingSlot, day: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS.map((day) => (
-                        <SelectItem key={day} value={day}>
-                          {DAY_LABELS[day]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          {/* General Settings Card */}
+          <Card>
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center gap-2 text-primary">
+                <Settings className="h-5 w-5" />
+                <CardTitle>إعدادات عامة</CardTitle>
+              </div>
+              <CardDescription>إعدادات إضافية للجدولة</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="break" className="text-right block">
+                  مدة الاستراحة بين المحاضرات (بالدقائق)
+                </Label>
+                <Input
+                  id="break"
+                  type="number"
+                  min={0}
+                  max={60}
+                  value={breakDuration}
+                  onChange={(e) => setBreakDuration(Number(e.target.value))}
+                  className="text-center"
+                />
+              </div>
+              <div className="text-center text-sm text-primary font-medium py-2 bg-muted/50 rounded-md">
+                إجمالي الفترات: {uniqueTimeRanges.length} فترات
+              </div>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleRestoreDefaults}
+              >
+                استعادة الإعدادات الافتراضية
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Time Slots Section */}
+        <Card>
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center gap-2 text-primary">
+              <Clock className="h-5 w-5" />
+              <CardTitle>الفترات الزمنية للمحاضرات</CardTitle>
+            </div>
+            <CardDescription>حدد أوقات بداية ونهاية كل فترة محاضرة</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Add New Slot Form */}
+            <div className="space-y-3">
+              <h3 className="text-center font-semibold">إضافة فترة جديدة</h3>
+              <div className="flex flex-col sm:flex-row items-center gap-3" dir="rtl">
+                <div className="flex-1 w-full">
+                  <Input
+                    placeholder="مثال: الفترة الخامسة"
+                    value={newSlot.name}
+                    onChange={(e) => setNewSlot({ ...newSlot, name: e.target.value })}
+                    className="text-right"
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>وقت البداية</Label>
-                    <Input
-                      type="time"
-                      value={editingSlot.start_time}
-                      onChange={(e) => setEditingSlot({ ...editingSlot, start_time: e.target.value })}
-                    />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex-1 sm:flex-none">
+                    <div className="relative">
+                      <Input
+                        type="time"
+                        value={newSlot.start_time}
+                        onChange={(e) => setNewSlot({ ...newSlot, start_time: e.target.value })}
+                        className="pl-8"
+                      />
+                      <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>وقت النهاية</Label>
-                    <Input
-                      type="time"
-                      value={editingSlot.end_time}
-                      onChange={(e) => setEditingSlot({ ...editingSlot, end_time: e.target.value })}
-                    />
+                  <span className="text-muted-foreground text-sm">إلى</span>
+                  <div className="flex-1 sm:flex-none">
+                    <div className="relative">
+                      <Input
+                        type="time"
+                        value={newSlot.end_time}
+                        onChange={(e) => setNewSlot({ ...newSlot, end_time: e.target.value })}
+                        className="pl-8"
+                      />
+                      <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
                 </div>
-                <Button onClick={handleUpdate} disabled={updateTimeSlot.isPending} className="w-full">
-                  {updateTimeSlot.isPending ? 'جاري التحديث...' : 'تحديث'}
+                <Button 
+                  onClick={handleAddSlot} 
+                  disabled={createTimeSlot.isPending || !newSlot.start_time || !newSlot.end_time}
+                  className="w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 ml-2" />
+                  إضافة
                 </Button>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
+            </div>
+
+            {/* Existing Slots Table */}
+            <div className="border rounded-lg">
+              {isLoading ? (
+                <p className="text-center py-8">جاري التحميل...</p>
+              ) : uniqueTimeRanges.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">لا توجد فترات زمنية بعد</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">الفترة</TableHead>
+                      <TableHead className="text-center">وقت البداية</TableHead>
+                      <TableHead className="text-center">وقت النهاية</TableHead>
+                      <TableHead className="text-center">المدة</TableHead>
+                      <TableHead className="w-[80px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {uniqueTimeRanges.map((slot, index) => {
+                      const startParts = slot.start_time.split(':');
+                      const endParts = slot.end_time.split(':');
+                      const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+                      const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+                      const durationMinutes = endMinutes - startMinutes;
+                      
+                      return (
+                        <TableRow key={slot.id}>
+                          <TableCell className="font-medium text-right">
+                            الفترة {index + 1}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {formatTime(slot.start_time)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {formatTime(slot.end_time)}
+                          </TableCell>
+                          <TableCell className="text-center text-muted-foreground">
+                            {durationMinutes} دقيقة
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(slot.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
