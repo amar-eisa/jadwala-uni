@@ -20,7 +20,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useProfessors, useCreateProfessor, useUpdateProfessor, useDeleteProfessor } from '@/hooks/useProfessors';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarOff } from 'lucide-react';
+import { ProfessorUnavailabilityDialog } from '@/components/ProfessorUnavailabilityDialog';
 
 export default function ProfessorsPage() {
   const { data: professors, isLoading } = useProfessors();
@@ -30,6 +31,7 @@ export default function ProfessorsPage() {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingProfessor, setEditingProfessor] = useState<{ id: string; name: string } | null>(null);
+  const [unavailabilityProfessor, setUnavailabilityProfessor] = useState<{ id: string; name: string } | null>(null);
   const [newName, setNewName] = useState('');
 
   const handleAdd = async () => {
@@ -102,7 +104,7 @@ export default function ProfessorsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>الاسم</TableHead>
-                    <TableHead className="w-[100px]">إجراءات</TableHead>
+                    <TableHead className="w-[150px]">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -110,7 +112,15 @@ export default function ProfessorsPage() {
                     <TableRow key={professor.id}>
                       <TableCell className="font-medium">{professor.name}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setUnavailabilityProfessor({ id: professor.id, name: professor.name })}
+                            title="أوقات عدم التوفر"
+                          >
+                            <CalendarOff className="h-4 w-4 text-orange-500" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -158,6 +168,12 @@ export default function ProfessorsPage() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Unavailability Dialog */}
+        <ProfessorUnavailabilityDialog
+          professor={unavailabilityProfessor}
+          onClose={() => setUnavailabilityProfessor(null)}
+        />
       </div>
     </Layout>
   );

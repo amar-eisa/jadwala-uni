@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      professor_unavailability: {
+        Row: {
+          all_day: boolean
+          created_at: string
+          day: Database["public"]["Enums"]["day_of_week"]
+          end_time: string | null
+          id: string
+          professor_id: string
+          start_time: string | null
+        }
+        Insert: {
+          all_day?: boolean
+          created_at?: string
+          day: Database["public"]["Enums"]["day_of_week"]
+          end_time?: string | null
+          id?: string
+          professor_id: string
+          start_time?: string | null
+        }
+        Update: {
+          all_day?: boolean
+          created_at?: string
+          day?: Database["public"]["Enums"]["day_of_week"]
+          end_time?: string | null
+          id?: string
+          professor_id?: string
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_unavailability_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       professors: {
         Row: {
           created_at: string
