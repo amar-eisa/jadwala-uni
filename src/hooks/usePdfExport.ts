@@ -17,7 +17,7 @@ export function usePdfExport() {
   ) => {
     const {
       filename = 'timetable',
-      title = 'الجدول الأسبوعي',
+      title = 'الجداول الدراسية',
       orientation = 'landscape'
     } = options;
 
