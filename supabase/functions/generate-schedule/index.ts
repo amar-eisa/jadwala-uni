@@ -27,6 +27,15 @@ interface Room {
   type: 'lab' | 'lecture';
 }
 
+interface ProfessorUnavailability {
+  id: string;
+  professor_id: string;
+  day: string;
+  start_time: string | null;
+  end_time: string | null;
+  all_day: boolean;
+}
+
 interface ScheduleEntry {
   room_id: string;
   time_slot_id: string;
@@ -43,22 +52,71 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch all required data
-    const [roomsRes, timeSlotsRes, subjectsRes] = await Promise.all([
+    // Fetch all required data including professor unavailability
+    const [roomsRes, timeSlotsRes, subjectsRes, unavailabilityRes] = await Promise.all([
       supabase.from('rooms').select('*'),
       supabase.from('time_slots').select('*'),
       supabase.from('subjects').select('*'),
+      supabase.from('professor_unavailability').select('*'),
     ]);
 
     if (roomsRes.error) throw roomsRes.error;
     if (timeSlotsRes.error) throw timeSlotsRes.error;
     if (subjectsRes.error) throw subjectsRes.error;
+    if (unavailabilityRes.error) throw unavailabilityRes.error;
 
     const rooms: Room[] = roomsRes.data;
     const timeSlots: TimeSlot[] = timeSlotsRes.data;
     const subjects: Subject[] = subjectsRes.data;
+    const unavailabilities: ProfessorUnavailability[] = unavailabilityRes.data;
 
     console.log(`Starting schedule generation: ${subjects.length} subjects, ${timeSlots.length} time slots, ${rooms.length} rooms`);
+    console.log(`Professor unavailability entries: ${unavailabilities.length}`);
+
+    // Build professor unavailability lookup
+    // Key: professor_id -> array of unavailability rules
+    const professorUnavailabilityMap: Record<string, ProfessorUnavailability[]> = {};
+    for (const unavail of unavailabilities) {
+      if (!professorUnavailabilityMap[unavail.professor_id]) {
+        professorUnavailabilityMap[unavail.professor_id] = [];
+      }
+      professorUnavailabilityMap[unavail.professor_id].push(unavail);
+    }
+
+    // Helper function to check if professor is available at a given time slot
+    function isProfessorAvailable(professorId: string, timeSlot: TimeSlot): boolean {
+      const unavailRules = professorUnavailabilityMap[professorId];
+      if (!unavailRules || unavailRules.length === 0) return true;
+
+      for (const rule of unavailRules) {
+        // Check if same day
+        if (rule.day !== timeSlot.day) continue;
+
+        // If all_day is true, professor is unavailable the entire day
+        if (rule.all_day) {
+          console.log(`Professor ${professorId} unavailable all day on ${rule.day}`);
+          return false;
+        }
+
+        // Check time overlap
+        if (rule.start_time && rule.end_time) {
+          const slotStart = timeSlot.start_time;
+          const slotEnd = timeSlot.end_time;
+          const unavailStart = rule.start_time;
+          const unavailEnd = rule.end_time;
+
+          // Check if there's any overlap between [slotStart, slotEnd] and [unavailStart, unavailEnd]
+          const hasOverlap = slotStart < unavailEnd && slotEnd > unavailStart;
+          
+          if (hasOverlap) {
+            console.log(`Professor ${professorId} unavailable at ${slotStart}-${slotEnd} on ${rule.day} (conflicts with ${unavailStart}-${unavailEnd})`);
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
 
     // Clear existing schedule
     await supabase.from('schedule_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -87,17 +145,6 @@ serve(async (req) => {
       sessions: s.sessionsNeeded 
     })));
 
-    // Day order for scheduling
-    const dayOrder: Record<string, number> = {
-      'saturday': 0,
-      'sunday': 1,
-      'monday': 2,
-      'tuesday': 3,
-      'wednesday': 4,
-      'thursday': 5,
-      'friday': 6
-    };
-    
     // Group time slots by day
     const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
     const slotsByDay: Record<string, TimeSlot[]> = {};
@@ -195,7 +242,12 @@ serve(async (req) => {
           // Try each time slot in this day
           let scheduled = false;
           for (const timeSlot of daySlots) {
-            // Check professor conflict
+            // Check professor availability (from unavailability table)
+            if (!isProfessorAvailable(subject.professor_id, timeSlot)) {
+              continue;
+            }
+            
+            // Check professor conflict (already scheduled at this time)
             const profKey = `${subject.professor_id}-${timeSlot.id}`;
             if (occupiedProfessorSlots.has(profKey)) continue;
             
