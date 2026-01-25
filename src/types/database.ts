@@ -1,5 +1,6 @@
 export type RoomType = 'lab' | 'lecture';
 export type DayOfWeek = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
+export type SubjectType = 'theory' | 'practical';
 
 export interface Room {
   id: string;
@@ -27,6 +28,8 @@ export interface Subject {
   id: string;
   code: string;
   name: string;
+  type: SubjectType;
+  weekly_hours: number;
   professor_id: string;
   group_id: string;
   created_at: string;
@@ -80,4 +83,9 @@ export const DAY_LABELS_EN: Record<DayOfWeek, string> = {
 export const ROOM_TYPE_LABELS: Record<RoomType, string> = {
   lab: 'معمل',
   lecture: 'قاعة محاضرات',
+};
+
+export const SUBJECT_TYPE_LABELS: Record<SubjectType, string> = {
+  theory: 'نظري',
+  practical: 'عملي',
 };
