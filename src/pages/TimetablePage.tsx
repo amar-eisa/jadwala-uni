@@ -16,9 +16,11 @@ import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, TimeSlot } from '@/types/database';
-import { Wand2, Trash2, Filter } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { usePdfExport } from '@/hooks/usePdfExport';
+import { toast } from '@/hooks/use-toast';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
@@ -42,6 +44,7 @@ export default function TimetablePage() {
   const { data: subjects } = useSubjects();
   const generateSchedule = useGenerateSchedule();
   const clearSchedule = useClearSchedule();
+  const { exportToPdf, isExporting } = usePdfExport();
 
   const [filterType, setFilterType] = useState<'all' | 'room' | 'professor' | 'group'>('all');
   const [filterId, setFilterId] = useState<string>('');
@@ -93,6 +96,23 @@ export default function TimetablePage() {
     }
   };
 
+  const handleExportPdf = async () => {
+    try {
+      await exportToPdf('timetable-grid', {
+        filename: 'university-timetable',
+        title: 'الجدول الأسبوعي للمحاضرات',
+        orientation: 'landscape',
+      });
+      toast({ title: 'تم تصدير الجدول بنجاح' });
+    } catch (error) {
+      toast({ 
+        title: 'خطأ في تصدير الجدول', 
+        description: 'حدث خطأ أثناء تصدير الجدول',
+        variant: 'destructive' 
+      });
+    }
+  };
+
   const formatTime = (time: string) => time.slice(0, 5);
 
   const canGenerate = rooms?.length && subjects?.length && timeSlots?.length;
@@ -111,6 +131,14 @@ export default function TimetablePage() {
             <p className="text-muted-foreground mt-1">عرض وتوليد جدول المحاضرات</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportPdf}
+              disabled={isExporting || !scheduleEntries?.length}
+            >
+              <FileDown className="h-4 w-4 ml-2" />
+              {isExporting ? 'جاري التصدير...' : 'تصدير PDF'}
+            </Button>
             <Button
               variant="outline"
               onClick={handleClear}
@@ -199,7 +227,7 @@ export default function TimetablePage() {
                 لا توجد فترات زمنية محددة
               </p>
             ) : (
-              <div className="min-w-[900px]">
+              <div id="timetable-grid" className="min-w-[900px] bg-background p-4">
                 {/* Header Row */}
                 <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: '80px repeat(6, 1fr)' }}>
                   <div className="p-3 bg-muted rounded-lg font-bold text-center text-sm">
