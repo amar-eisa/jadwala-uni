@@ -87,7 +87,7 @@ serve(async (req) => {
       sessions: s.sessionsNeeded 
     })));
 
-    // Sort time slots by day order and start time (start from first period)
+    // Day order for scheduling
     const dayOrder: Record<string, number> = {
       'saturday': 0,
       'sunday': 1,
@@ -98,13 +98,17 @@ serve(async (req) => {
       'friday': 6
     };
     
-    const sortedTimeSlots = [...timeSlots].sort((a, b) => {
-      const dayDiff = dayOrder[a.day] - dayOrder[b.day];
-      if (dayDiff !== 0) return dayDiff;
-      return a.start_time.localeCompare(b.start_time);
-    });
+    // Group time slots by day
+    const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
+    const slotsByDay: Record<string, TimeSlot[]> = {};
     
-    console.log('Time slots order:', sortedTimeSlots.map(s => `${s.day} ${s.start_time}`));
+    for (const day of days) {
+      slotsByDay[day] = timeSlots
+        .filter(s => s.day === day)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    }
+    
+    console.log('Slots per day:', Object.entries(slotsByDay).map(([day, slots]) => `${day}: ${slots.length}`));
 
     // Schedule each subject for the required number of sessions
     let totalSessionsScheduled = 0;
@@ -113,54 +117,76 @@ serve(async (req) => {
     for (const { subject, sessionsNeeded } of sessionsPerSubject) {
       let scheduledCount = 0;
       totalSessionsNeeded += sessionsNeeded;
+      const scheduledDays = new Set<string>(); // Track which days this subject is scheduled
 
       console.log(`Scheduling subject ${subject.id}: need ${sessionsNeeded} sessions`);
 
-      for (const timeSlot of sortedTimeSlots) {
-        if (scheduledCount >= sessionsNeeded) break;
+      // Filter rooms by type: theory → lecture, practical → lab
+      const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
+      const compatibleRooms = rooms.filter(r => r.type === requiredRoomType);
+      
+      if (compatibleRooms.length === 0) {
+        console.warn(`No compatible rooms for subject ${subject.id} (type: ${subject.type}, needs: ${requiredRoomType})`);
+        continue;
+      }
 
-        // Check professor conflict
-        const profKey = `${subject.professor_id}-${timeSlot.id}`;
-        if (occupiedProfessorSlots.has(profKey)) continue;
-
-        // Check group conflict
-        const groupKey = `${subject.group_id}-${timeSlot.id}`;
-        if (occupiedGroupSlots.has(groupKey)) continue;
-
-        // Filter rooms by type: theory → lecture, practical → lab
-        const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
-        const compatibleRooms = rooms.filter(r => r.type === requiredRoomType);
-        
-        // Find least used available room (Load Balancing)
-        const sortedRooms = [...compatibleRooms].sort((a, b) => roomUsage[a.id] - roomUsage[b.id]);
-
-        for (const room of sortedRooms) {
-          const roomKey = `${room.id}-${timeSlot.id}`;
-          if (occupiedRoomSlots.has(roomKey)) continue;
-
-          // Schedule the class
-          scheduleEntries.push({
-            room_id: room.id,
-            time_slot_id: timeSlot.id,
-            subject_id: subject.id,
-          });
-
-          // Mark as occupied
-          occupiedRoomSlots.add(roomKey);
-          occupiedProfessorSlots.add(profKey);
-          occupiedGroupSlots.add(groupKey);
-          roomUsage[room.id]++;
-
-          scheduledCount++;
-          totalSessionsScheduled++;
+      // Try to schedule sessions on different days
+      // First pass: prioritize unscheduled days
+      for (let pass = 0; pass < 2 && scheduledCount < sessionsNeeded; pass++) {
+        for (const day of days) {
+          if (scheduledCount >= sessionsNeeded) break;
           
-          console.log(`Scheduled session ${scheduledCount}/${sessionsNeeded} for subject ${subject.id}`);
-          break;
+          // In first pass, skip days where this subject is already scheduled
+          if (pass === 0 && scheduledDays.has(day)) continue;
+          
+          const daySlots = slotsByDay[day] || [];
+          
+          for (const timeSlot of daySlots) {
+            if (scheduledCount >= sessionsNeeded) break;
+
+            // Check professor conflict
+            const profKey = `${subject.professor_id}-${timeSlot.id}`;
+            if (occupiedProfessorSlots.has(profKey)) continue;
+
+            // Check group conflict
+            const groupKey = `${subject.group_id}-${timeSlot.id}`;
+            if (occupiedGroupSlots.has(groupKey)) continue;
+
+            // Find least used available room (Load Balancing)
+            const sortedRooms = [...compatibleRooms].sort((a, b) => roomUsage[a.id] - roomUsage[b.id]);
+
+            for (const room of sortedRooms) {
+              const roomKey = `${room.id}-${timeSlot.id}`;
+              if (occupiedRoomSlots.has(roomKey)) continue;
+
+              // Schedule the class
+              scheduleEntries.push({
+                room_id: room.id,
+                time_slot_id: timeSlot.id,
+                subject_id: subject.id,
+              });
+
+              // Mark as occupied
+              occupiedRoomSlots.add(roomKey);
+              occupiedProfessorSlots.add(profKey);
+              occupiedGroupSlots.add(groupKey);
+              roomUsage[room.id]++;
+              scheduledDays.add(day);
+
+              scheduledCount++;
+              totalSessionsScheduled++;
+              
+              console.log(`Scheduled session ${scheduledCount}/${sessionsNeeded} for subject ${subject.id} on ${day}`);
+              break;
+            }
+            
+            // Only schedule one session per day in first pass
+            if (pass === 0 && scheduledDays.has(day)) break;
+          }
         }
       }
 
       if (scheduledCount < sessionsNeeded) {
-        const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
         console.warn(`Could only schedule ${scheduledCount}/${sessionsNeeded} sessions for subject ${subject.id} (type: ${subject.type}, needs: ${requiredRoomType} rooms)`);
       }
     }
