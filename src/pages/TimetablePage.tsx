@@ -18,22 +18,20 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, TimeSlot } from '@/types/database';
 import { Wand2, Trash2, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
-const DAYS_ORDER: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
+const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
-// Color palette for subjects
-const COLORS = [
-  'bg-blue-100 border-blue-300 text-blue-800',
-  'bg-green-100 border-green-300 text-green-800',
-  'bg-purple-100 border-purple-300 text-purple-800',
-  'bg-orange-100 border-orange-300 text-orange-800',
-  'bg-pink-100 border-pink-300 text-pink-800',
-  'bg-teal-100 border-teal-300 text-teal-800',
-  'bg-yellow-100 border-yellow-300 text-yellow-800',
-  'bg-red-100 border-red-300 text-red-800',
-  'bg-indigo-100 border-indigo-300 text-indigo-800',
-  'bg-cyan-100 border-cyan-300 text-cyan-800',
-];
+// Color palette for groups - matching reference image style
+const GROUP_COLORS: Record<string, { bg: string; border: string; badge: string }> = {
+  'CS-1': { bg: 'bg-stone-50', border: 'border-stone-200', badge: 'bg-amber-400 text-amber-900' },
+  'CS-2': { bg: 'bg-stone-50', border: 'border-stone-200', badge: 'bg-amber-400 text-amber-900' },
+  'CS-3': { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-400 text-amber-900' },
+  'IT-1': { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-400 text-amber-900' },
+  'IT-2': { bg: 'bg-stone-50', border: 'border-stone-200', badge: 'bg-amber-400 text-amber-900' },
+};
+
+const DEFAULT_COLOR = { bg: 'bg-stone-50', border: 'border-stone-200', badge: 'bg-amber-400 text-amber-900' };
 
 export default function TimetablePage() {
   const { data: scheduleEntries, isLoading } = useScheduleEntries();
@@ -61,15 +59,6 @@ export default function TimetablePage() {
       })
       .sort((a, b) => a.start_time.localeCompare(b.start_time));
   }, [timeSlots]);
-
-  // Get subject color
-  const subjectColors = useMemo(() => {
-    const colors: Record<string, string> = {};
-    subjects?.forEach((subject, index) => {
-      colors[subject.id] = COLORS[index % COLORS.length];
-    });
-    return colors;
-  }, [subjects]);
 
   // Filter entries based on selection
   const filteredEntries = useMemo(() => {
@@ -107,6 +96,11 @@ export default function TimetablePage() {
   const formatTime = (time: string) => time.slice(0, 5);
 
   const canGenerate = rooms?.length && subjects?.length && timeSlots?.length;
+
+  const getGroupColor = (groupName: string | undefined) => {
+    if (!groupName) return DEFAULT_COLOR;
+    return GROUP_COLORS[groupName] || DEFAULT_COLOR;
+  };
 
   return (
     <Layout>
@@ -205,11 +199,11 @@ export default function TimetablePage() {
                 لا توجد فترات زمنية محددة
               </p>
             ) : (
-              <div className="min-w-[800px]">
+              <div className="min-w-[900px]">
                 {/* Header Row */}
-                <div className="grid grid-cols-6 gap-1 mb-1">
-                  <div className="p-3 bg-muted rounded-lg font-bold text-center">
-                    الوقت
+                <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: '80px repeat(6, 1fr)' }}>
+                  <div className="p-3 bg-muted rounded-lg font-bold text-center text-sm">
+                    الفترة
                   </div>
                   {DAYS_ORDER.map((day) => (
                     <div key={day} className="p-3 bg-muted rounded-lg font-bold text-center">
@@ -219,10 +213,14 @@ export default function TimetablePage() {
                 </div>
 
                 {/* Time Slot Rows */}
-                {uniqueTimeSlots.map((slot) => (
-                  <div key={`${slot.start_time}-${slot.end_time}`} className="grid grid-cols-6 gap-1 mb-1">
+                {uniqueTimeSlots.map((slot, slotIndex) => (
+                  <div 
+                    key={`${slot.start_time}-${slot.end_time}`} 
+                    className="grid gap-1 mb-1"
+                    style={{ gridTemplateColumns: '80px repeat(6, 1fr)' }}
+                  >
                     {/* Time Cell */}
-                    <div className="p-3 bg-muted/50 rounded-lg text-center text-sm font-medium">
+                    <div className="p-2 bg-muted/50 rounded-lg text-center text-xs font-medium flex flex-col justify-center">
                       <div>{formatTime(slot.start_time)}</div>
                       <div className="text-muted-foreground">-</div>
                       <div>{formatTime(slot.end_time)}</div>
@@ -234,33 +232,57 @@ export default function TimetablePage() {
                       return (
                         <div
                           key={day}
-                          className="min-h-[100px] p-1 bg-muted/30 rounded-lg"
+                          className="min-h-[120px] p-1 bg-muted/20 rounded-lg"
                         >
                           {entries.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
-                              -
+                            <div className="h-full flex items-center justify-center text-muted-foreground/50 text-xs">
+                              
                             </div>
                           ) : (
-                            <div className="space-y-1">
-                              {entries.map((entry) => (
-                                <div
-                                  key={entry.id}
-                                  className={cn(
-                                    "p-2 rounded border text-xs",
-                                    subjectColors[entry.subject_id] || COLORS[0]
-                                  )}
-                                >
-                                  <div className="font-bold truncate">
-                                    {entry.subject?.name}
+                            <div className="space-y-1 h-full">
+                              {entries.map((entry) => {
+                                const groupName = entry.subject?.group?.name;
+                                const colors = getGroupColor(groupName);
+                                
+                                return (
+                                  <div
+                                    key={entry.id}
+                                    className={cn(
+                                      "p-3 rounded-lg border-2 h-full flex flex-col justify-between",
+                                      colors.bg,
+                                      colors.border
+                                    )}
+                                  >
+                                    {/* Subject Name/Code */}
+                                    <div className="text-center">
+                                      <div className="font-bold text-lg text-foreground">
+                                        {entry.subject?.name}
+                                      </div>
+                                      {/* Professor Name */}
+                                      <div className="text-sm text-amber-700 mt-1">
+                                        {entry.subject?.professor?.name}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Room & Group */}
+                                    <div className="flex items-center justify-center gap-2 mt-2">
+                                      <span className="text-sm text-muted-foreground">
+                                        {entry.room?.name}
+                                      </span>
+                                      {groupName && (
+                                        <Badge 
+                                          className={cn(
+                                            "text-xs font-medium px-2 py-0.5 rounded-full",
+                                            colors.badge
+                                          )}
+                                        >
+                                          {groupName}
+                                        </Badge>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="truncate opacity-80">
-                                    {entry.subject?.professor?.name}
-                                  </div>
-                                  <div className="truncate opacity-60">
-                                    {entry.room?.name}
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>
