@@ -128,45 +128,62 @@ serve(async (req) => {
       }
     }
     
-    console.log(`Total sessions to schedule: ${allSessions.length}`);
+    const totalSessionsNeeded = allSessions.length;
+    console.log(`Total sessions to schedule: ${totalSessionsNeeded}`);
+    
+    // Calculate target sessions per day for even distribution
+    const targetPerDay = Math.ceil(totalSessionsNeeded / days.length);
+    console.log(`Target sessions per day: ${targetPerDay} (${totalSessionsNeeded} sessions / ${days.length} days)`);
+    
+    // Track sessions per day for balancing
+    const sessionsPerDay: Record<string, number> = {};
+    days.forEach(d => sessionsPerDay[d] = 0);
     
     // Track scheduled days per subject to spread across week
     const subjectScheduledDays: Record<string, Set<string>> = {};
     
-    // Schedule sessions using round-robin across days
-    let totalSessionsScheduled = 0;
-    const totalSessionsNeeded = allSessions.length;
-    
-    // Create a queue of sessions, sorted to prioritize spreading
+    // Create session queue
     const sessionQueue = [...allSessions];
+    let totalSessionsScheduled = 0;
     
-    // Keep trying until all sessions are scheduled or no progress
-    let lastScheduledCount = -1;
-    
-    while (sessionQueue.length > 0 && totalSessionsScheduled !== lastScheduledCount) {
-      lastScheduledCount = totalSessionsScheduled;
+    // Multiple passes to ensure all sessions are scheduled evenly
+    for (let round = 0; round < 20 && sessionQueue.length > 0; round++) {
+      // Sort days by current load (least loaded first) for balanced distribution
+      const sortedDays = [...days].sort((a, b) => sessionsPerDay[a] - sessionsPerDay[b]);
       
-      // For each day, try to schedule one session per subject (round-robin)
-      for (const day of days) {
+      let scheduledThisRound = 0;
+      
+      for (const day of sortedDays) {
+        // In early rounds, skip days that already reached target to force distribution
+        if (round < 10 && sessionsPerDay[day] >= targetPerDay) continue;
+        
         const daySlots = slotsByDay[day] || [];
         if (daySlots.length === 0) continue;
         
-        // Get sessions that haven't been scheduled on this day yet
-        const sessionsForDay = sessionQueue.filter(s => {
-          const scheduledDays = subjectScheduledDays[s.subject.id] || new Set();
-          // Prioritize subjects not yet scheduled on this day
-          return !scheduledDays.has(day);
-        });
+        // Find best session to schedule on this day
+        // Prioritize sessions whose subjects haven't been scheduled on this day yet
+        const candidateSessions = sessionQueue
+          .map((session, index) => {
+            const scheduledDays = subjectScheduledDays[session.subject.id] || new Set();
+            return {
+              session,
+              index,
+              alreadyOnThisDay: scheduledDays.has(day),
+              daysScheduled: scheduledDays.size
+            };
+          })
+          .sort((a, b) => {
+            // First: prefer sessions not yet on this day
+            if (a.alreadyOnThisDay !== b.alreadyOnThisDay) {
+              return a.alreadyOnThisDay ? 1 : -1;
+            }
+            // Then: prefer sessions with fewer days scheduled (spread them out)
+            return a.daysScheduled - b.daysScheduled;
+          });
         
-        // Also include sessions that need to be scheduled but all days are taken
-        const fallbackSessions = sessionQueue.filter(s => {
-          const scheduledDays = subjectScheduledDays[s.subject.id] || new Set();
-          return scheduledDays.has(day);
-        });
-        
-        const orderedSessions = [...sessionsForDay, ...fallbackSessions];
-        
-        for (const session of orderedSessions) {
+        // Try to schedule ONE session on this day per round
+        for (const candidate of candidateSessions) {
+          const session = candidate.session;
           const subject = session.subject;
           
           // Filter rooms by type
@@ -176,6 +193,7 @@ serve(async (req) => {
           if (compatibleRooms.length === 0) continue;
           
           // Try each time slot in this day
+          let scheduled = false;
           for (const timeSlot of daySlots) {
             // Check professor conflict
             const profKey = `${subject.professor_id}-${timeSlot.id}`;
@@ -188,7 +206,6 @@ serve(async (req) => {
             // Find least used available room
             const sortedRooms = [...compatibleRooms].sort((a, b) => roomUsage[a.id] - roomUsage[b.id]);
             
-            let scheduled = false;
             for (const room of sortedRooms) {
               const roomKey = `${room.id}-${timeSlot.id}`;
               if (occupiedRoomSlots.has(roomKey)) continue;
@@ -205,6 +222,7 @@ serve(async (req) => {
               occupiedProfessorSlots.add(profKey);
               occupiedGroupSlots.add(groupKey);
               roomUsage[room.id]++;
+              sessionsPerDay[day]++;
               
               // Track scheduled day for this subject
               if (!subjectScheduledDays[subject.id]) {
@@ -219,25 +237,37 @@ serve(async (req) => {
               }
               
               totalSessionsScheduled++;
-              console.log(`Scheduled subject ${subject.id} on ${day} (${totalSessionsScheduled}/${totalSessionsNeeded})`);
-              
+              scheduledThisRound++;
               scheduled = true;
               break;
             }
             
             if (scheduled) break;
           }
+          
+          // Only schedule ONE session per day per round for maximum distribution
+          if (scheduled) break;
         }
       }
+      
+      // If no progress was made, break
+      if (scheduledThisRound === 0) {
+        console.log(`Round ${round + 1}: No progress, breaking`);
+        break;
+      }
+      
+      console.log(`Round ${round + 1}: Scheduled ${scheduledThisRound} sessions`);
+    }
+    
+    // Log distribution summary
+    console.log('=== Final Distribution ===');
+    for (const day of days) {
+      console.log(`${day}: ${sessionsPerDay[day]} sessions`);
     }
     
     // Log unscheduled sessions
     if (sessionQueue.length > 0) {
-      console.warn(`Could not schedule ${sessionQueue.length} sessions:`);
-      for (const s of sessionQueue) {
-        const requiredRoomType = s.subject.type === 'theory' ? 'lecture' : 'lab';
-        console.warn(`- Subject ${s.subject.id} (needs ${requiredRoomType} room)`);
-      }
+      console.warn(`Could not schedule ${sessionQueue.length} sessions`);
     }
 
     // Insert all entries
