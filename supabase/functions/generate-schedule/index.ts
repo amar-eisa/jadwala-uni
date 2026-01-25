@@ -87,8 +87,24 @@ serve(async (req) => {
       sessions: s.sessionsNeeded 
     })));
 
-    // Shuffle time slots to get better distribution
-    const shuffledTimeSlots = [...timeSlots].sort(() => Math.random() - 0.5);
+    // Sort time slots by day order and start time (start from first period)
+    const dayOrder: Record<string, number> = {
+      'saturday': 0,
+      'sunday': 1,
+      'monday': 2,
+      'tuesday': 3,
+      'wednesday': 4,
+      'thursday': 5,
+      'friday': 6
+    };
+    
+    const sortedTimeSlots = [...timeSlots].sort((a, b) => {
+      const dayDiff = dayOrder[a.day] - dayOrder[b.day];
+      if (dayDiff !== 0) return dayDiff;
+      return a.start_time.localeCompare(b.start_time);
+    });
+    
+    console.log('Time slots order:', sortedTimeSlots.map(s => `${s.day} ${s.start_time}`));
 
     // Schedule each subject for the required number of sessions
     let totalSessionsScheduled = 0;
@@ -100,7 +116,7 @@ serve(async (req) => {
 
       console.log(`Scheduling subject ${subject.id}: need ${sessionsNeeded} sessions`);
 
-      for (const timeSlot of shuffledTimeSlots) {
+      for (const timeSlot of sortedTimeSlots) {
         if (scheduledCount >= sessionsNeeded) break;
 
         // Check professor conflict
