@@ -110,84 +110,133 @@ serve(async (req) => {
     
     console.log('Slots per day:', Object.entries(slotsByDay).map(([day, slots]) => `${day}: ${slots.length}`));
 
-    // Schedule each subject for the required number of sessions
-    let totalSessionsScheduled = 0;
-    let totalSessionsNeeded = 0;
-
+    // Build a list of all sessions needed with their subject info
+    interface SessionToSchedule {
+      subject: Subject;
+      sessionIndex: number;
+      totalSessions: number;
+    }
+    
+    const allSessions: SessionToSchedule[] = [];
     for (const { subject, sessionsNeeded } of sessionsPerSubject) {
-      let scheduledCount = 0;
-      totalSessionsNeeded += sessionsNeeded;
-      const scheduledDays = new Set<string>(); // Track which days this subject is scheduled
-
-      console.log(`Scheduling subject ${subject.id}: need ${sessionsNeeded} sessions`);
-
-      // Filter rooms by type: theory → lecture, practical → lab
-      const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
-      const compatibleRooms = rooms.filter(r => r.type === requiredRoomType);
-      
-      if (compatibleRooms.length === 0) {
-        console.warn(`No compatible rooms for subject ${subject.id} (type: ${subject.type}, needs: ${requiredRoomType})`);
-        continue;
+      for (let i = 0; i < sessionsNeeded; i++) {
+        allSessions.push({
+          subject,
+          sessionIndex: i,
+          totalSessions: sessionsNeeded
+        });
       }
-
-      // Try to schedule sessions on different days
-      // First pass: prioritize unscheduled days
-      for (let pass = 0; pass < 2 && scheduledCount < sessionsNeeded; pass++) {
-        for (const day of days) {
-          if (scheduledCount >= sessionsNeeded) break;
+    }
+    
+    console.log(`Total sessions to schedule: ${allSessions.length}`);
+    
+    // Track scheduled days per subject to spread across week
+    const subjectScheduledDays: Record<string, Set<string>> = {};
+    
+    // Schedule sessions using round-robin across days
+    let totalSessionsScheduled = 0;
+    const totalSessionsNeeded = allSessions.length;
+    
+    // Create a queue of sessions, sorted to prioritize spreading
+    const sessionQueue = [...allSessions];
+    
+    // Keep trying until all sessions are scheduled or no progress
+    let lastScheduledCount = -1;
+    
+    while (sessionQueue.length > 0 && totalSessionsScheduled !== lastScheduledCount) {
+      lastScheduledCount = totalSessionsScheduled;
+      
+      // For each day, try to schedule one session per subject (round-robin)
+      for (const day of days) {
+        const daySlots = slotsByDay[day] || [];
+        if (daySlots.length === 0) continue;
+        
+        // Get sessions that haven't been scheduled on this day yet
+        const sessionsForDay = sessionQueue.filter(s => {
+          const scheduledDays = subjectScheduledDays[s.subject.id] || new Set();
+          // Prioritize subjects not yet scheduled on this day
+          return !scheduledDays.has(day);
+        });
+        
+        // Also include sessions that need to be scheduled but all days are taken
+        const fallbackSessions = sessionQueue.filter(s => {
+          const scheduledDays = subjectScheduledDays[s.subject.id] || new Set();
+          return scheduledDays.has(day);
+        });
+        
+        const orderedSessions = [...sessionsForDay, ...fallbackSessions];
+        
+        for (const session of orderedSessions) {
+          const subject = session.subject;
           
-          // In first pass, skip days where this subject is already scheduled
-          if (pass === 0 && scheduledDays.has(day)) continue;
+          // Filter rooms by type
+          const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
+          const compatibleRooms = rooms.filter(r => r.type === requiredRoomType);
           
-          const daySlots = slotsByDay[day] || [];
+          if (compatibleRooms.length === 0) continue;
           
+          // Try each time slot in this day
           for (const timeSlot of daySlots) {
-            if (scheduledCount >= sessionsNeeded) break;
-
             // Check professor conflict
             const profKey = `${subject.professor_id}-${timeSlot.id}`;
             if (occupiedProfessorSlots.has(profKey)) continue;
-
+            
             // Check group conflict
             const groupKey = `${subject.group_id}-${timeSlot.id}`;
             if (occupiedGroupSlots.has(groupKey)) continue;
-
-            // Find least used available room (Load Balancing)
+            
+            // Find least used available room
             const sortedRooms = [...compatibleRooms].sort((a, b) => roomUsage[a.id] - roomUsage[b.id]);
-
+            
+            let scheduled = false;
             for (const room of sortedRooms) {
               const roomKey = `${room.id}-${timeSlot.id}`;
               if (occupiedRoomSlots.has(roomKey)) continue;
-
+              
               // Schedule the class
               scheduleEntries.push({
                 room_id: room.id,
                 time_slot_id: timeSlot.id,
                 subject_id: subject.id,
               });
-
+              
               // Mark as occupied
               occupiedRoomSlots.add(roomKey);
               occupiedProfessorSlots.add(profKey);
               occupiedGroupSlots.add(groupKey);
               roomUsage[room.id]++;
-              scheduledDays.add(day);
-
-              scheduledCount++;
-              totalSessionsScheduled++;
               
-              console.log(`Scheduled session ${scheduledCount}/${sessionsNeeded} for subject ${subject.id} on ${day}`);
+              // Track scheduled day for this subject
+              if (!subjectScheduledDays[subject.id]) {
+                subjectScheduledDays[subject.id] = new Set();
+              }
+              subjectScheduledDays[subject.id].add(day);
+              
+              // Remove from queue
+              const queueIndex = sessionQueue.indexOf(session);
+              if (queueIndex > -1) {
+                sessionQueue.splice(queueIndex, 1);
+              }
+              
+              totalSessionsScheduled++;
+              console.log(`Scheduled subject ${subject.id} on ${day} (${totalSessionsScheduled}/${totalSessionsNeeded})`);
+              
+              scheduled = true;
               break;
             }
             
-            // Only schedule one session per day in first pass
-            if (pass === 0 && scheduledDays.has(day)) break;
+            if (scheduled) break;
           }
         }
       }
-
-      if (scheduledCount < sessionsNeeded) {
-        console.warn(`Could only schedule ${scheduledCount}/${sessionsNeeded} sessions for subject ${subject.id} (type: ${subject.type}, needs: ${requiredRoomType} rooms)`);
+    }
+    
+    // Log unscheduled sessions
+    if (sessionQueue.length > 0) {
+      console.warn(`Could not schedule ${sessionQueue.length} sessions:`);
+      for (const s of sessionQueue) {
+        const requiredRoomType = s.subject.type === 'theory' ? 'lecture' : 'lab';
+        console.warn(`- Subject ${s.subject.id} (needs ${requiredRoomType} room)`);
       }
     }
 
