@@ -232,14 +232,12 @@ export default function TimetablePage() {
                       return (
                         <div
                           key={day}
-                          className="min-h-[120px] p-1 bg-muted/20 rounded-lg"
+                          className="min-h-[100px] p-1 bg-muted/20 rounded-lg"
                         >
                           {entries.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-muted-foreground/50 text-xs">
-                              
-                            </div>
+                            <div className="h-full" />
                           ) : (
-                            <div className="space-y-1 h-full">
+                            <div className="space-y-1">
                               {entries.map((entry) => {
                                 const groupName = entry.subject?.group?.name;
                                 const colors = getGroupColor(groupName);
@@ -248,27 +246,23 @@ export default function TimetablePage() {
                                   <div
                                     key={entry.id}
                                     className={cn(
-                                      "p-3 rounded-lg border-2 h-full flex flex-col justify-between",
+                                      "p-3 rounded-lg border-2 min-h-[90px]",
                                       colors.bg,
                                       colors.border
                                     )}
                                   >
-                                    {/* Subject Name/Code */}
-                                    <div className="text-center">
-                                      <div className="font-bold text-lg text-foreground">
-                                        {entry.subject?.name}
-                                      </div>
-                                      {/* Professor Name */}
-                                      <div className="text-sm text-amber-700 mt-1">
-                                        {entry.subject?.professor?.name}
-                                      </div>
+                                    {/* Subject Name */}
+                                    <div className="font-bold text-base text-center text-foreground mb-1">
+                                      {entry.subject?.name}
                                     </div>
                                     
-                                    {/* Room & Group */}
-                                    <div className="flex items-center justify-center gap-2 mt-2">
-                                      <span className="text-sm text-muted-foreground">
-                                        {entry.room?.name}
-                                      </span>
+                                    {/* Professor Name */}
+                                    <div className="text-sm text-amber-700 text-center mb-3">
+                                      {entry.subject?.professor?.name}
+                                    </div>
+                                    
+                                    {/* Room & Group - Bottom aligned */}
+                                    <div className="flex items-center justify-center gap-2">
                                       {groupName && (
                                         <Badge 
                                           className={cn(
@@ -279,6 +273,9 @@ export default function TimetablePage() {
                                           {groupName}
                                         </Badge>
                                       )}
+                                      <span className="text-sm text-muted-foreground">
+                                        {entry.room?.name}
+                                      </span>
                                     </div>
                                   </div>
                                 );
