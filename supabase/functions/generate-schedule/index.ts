@@ -10,6 +10,7 @@ interface Subject {
   id: string;
   professor_id: string;
   group_id: string;
+  weekly_hours: number;
 }
 
 interface TimeSlot {
@@ -55,6 +56,8 @@ serve(async (req) => {
     const timeSlots: TimeSlot[] = timeSlotsRes.data;
     const subjects: Subject[] = subjectsRes.data;
 
+    console.log(`Starting schedule generation: ${subjects.length} subjects, ${timeSlots.length} time slots, ${rooms.length} rooms`);
+
     // Clear existing schedule
     await supabase.from('schedule_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
@@ -69,12 +72,34 @@ serve(async (req) => {
 
     const scheduleEntries: ScheduleEntry[] = [];
 
-    // Schedule each subject
-    for (const subject of subjects) {
-      let scheduled = false;
+    // Calculate sessions needed per subject based on weekly_hours
+    // Assuming each session is 2 hours
+    const sessionsPerSubject: { subject: Subject; sessionsNeeded: number }[] = subjects.map(subject => ({
+      subject,
+      sessionsNeeded: Math.ceil((subject.weekly_hours || 2) / 2)
+    }));
 
-      for (const timeSlot of timeSlots) {
-        if (scheduled) break;
+    console.log('Sessions needed:', sessionsPerSubject.map(s => ({ 
+      id: s.subject.id, 
+      weekly_hours: s.subject.weekly_hours, 
+      sessions: s.sessionsNeeded 
+    })));
+
+    // Shuffle time slots to get better distribution
+    const shuffledTimeSlots = [...timeSlots].sort(() => Math.random() - 0.5);
+
+    // Schedule each subject for the required number of sessions
+    let totalSessionsScheduled = 0;
+    let totalSessionsNeeded = 0;
+
+    for (const { subject, sessionsNeeded } of sessionsPerSubject) {
+      let scheduledCount = 0;
+      totalSessionsNeeded += sessionsNeeded;
+
+      console.log(`Scheduling subject ${subject.id}: need ${sessionsNeeded} sessions`);
+
+      for (const timeSlot of shuffledTimeSlots) {
+        if (scheduledCount >= sessionsNeeded) break;
 
         // Check professor conflict
         const profKey = `${subject.professor_id}-${timeSlot.id}`;
@@ -104,9 +129,16 @@ serve(async (req) => {
           occupiedGroupSlots.add(groupKey);
           roomUsage[room.id]++;
 
-          scheduled = true;
+          scheduledCount++;
+          totalSessionsScheduled++;
+          
+          console.log(`Scheduled session ${scheduledCount}/${sessionsNeeded} for subject ${subject.id}`);
           break;
         }
+      }
+
+      if (scheduledCount < sessionsNeeded) {
+        console.warn(`Could only schedule ${scheduledCount}/${sessionsNeeded} sessions for subject ${subject.id}`);
       }
     }
 
@@ -116,12 +148,15 @@ serve(async (req) => {
       if (error) throw error;
     }
 
+    console.log(`Schedule generation complete: ${totalSessionsScheduled}/${totalSessionsNeeded} sessions scheduled`);
+
     return new Response(
       JSON.stringify({
         success: true,
         scheduled: scheduleEntries.length,
-        total: subjects.length,
-        message: `تم جدولة ${scheduleEntries.length} من ${subjects.length} مادة`
+        total: totalSessionsNeeded,
+        subjects: subjects.length,
+        message: `تم جدولة ${scheduleEntries.length} من ${totalSessionsNeeded} محاضرة`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
