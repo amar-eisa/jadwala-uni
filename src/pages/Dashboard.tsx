@@ -122,33 +122,31 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {stats.map((stat, index) => (
-            <Card 
-              key={stat.name} 
-              className="stat-card group border-0 shadow-card hover:shadow-card-hover"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className={cn(
-                    "p-3 rounded-xl",
-                    stat.bgColor
-                  )}>
-                    <stat.icon className={cn("h-6 w-6", stat.iconColor)} />
+            <Link to={stat.href} key={stat.name}>
+              <Card 
+                className="stat-card group border-0 shadow-card hover:shadow-card-hover cursor-pointer"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className={cn(
+                      "p-3 rounded-xl",
+                      stat.bgColor
+                    )}>
+                      <stat.icon className={cn("h-6 w-6", stat.iconColor)} />
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg">
+                      <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
-                  <Link 
-                    to={stat.href}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
-                  >
-                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                  </Link>
-                </div>
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-muted-foreground">{stat.name}</p>
-                  <p className="text-3xl font-bold mt-1 animate-count-up">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-muted-foreground">{stat.name}</p>
+                    <p className="text-3xl font-bold mt-1 animate-count-up">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 
