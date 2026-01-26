@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -15,7 +16,8 @@ import {
 } from '@/components/ui/table';
 import { useTimeSlots, useCreateTimeSlot, useDeleteTimeSlot } from '@/hooks/useTimeSlots';
 import { DayOfWeek, DAY_LABELS } from '@/types/database';
-import { Plus, Trash2, Clock, Calendar, Settings } from 'lucide-react';
+import { Plus, Trash2, Clock, Calendar, Settings, RotateCcw } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const DAYS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
@@ -43,7 +45,6 @@ export default function TimeSlotsPage() {
   const handleAddSlot = async () => {
     if (!newSlot.start_time || !newSlot.end_time) return;
     
-    // Create time slot for all selected days
     for (const day of selectedDays) {
       await createTimeSlot.mutateAsync({
         day,
@@ -56,9 +57,7 @@ export default function TimeSlotsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذه الفترة الزمنية؟')) {
-      await deleteTimeSlot.mutateAsync(id);
-    }
+    await deleteTimeSlot.mutateAsync(id);
   };
 
   const handleRestoreDefaults = () => {
@@ -70,7 +69,6 @@ export default function TimeSlotsPage() {
     return time.slice(0, 5);
   };
 
-  // Get unique time ranges (regardless of day)
   const uniqueTimeRanges = timeSlots?.reduce((acc, slot) => {
     const key = `${slot.start_time}-${slot.end_time}`;
     if (!acc.find(s => `${s.start_time}-${s.end_time}` === key)) {
@@ -82,55 +80,80 @@ export default function TimeSlotsPage() {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">إدارة الفترات الزمنية</h1>
           <p className="text-muted-foreground mt-1">تحديد أوقات المحاضرات المتاحة</p>
         </div>
 
         {/* Top Section - Days & Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Work Days Card */}
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center gap-2 text-primary">
-                <Calendar className="h-5 w-5" />
-                <CardTitle>أيام العمل</CardTitle>
+          <Card className="border-0 shadow-card">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>أيام العمل</CardTitle>
+                  <CardDescription>حدد الأيام التي تُعقد فيها المحاضرات</CardDescription>
+                </div>
               </div>
-              <CardDescription>حدد الأيام التي تُعقد فيها المحاضرات</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                {DAYS.map((day) => (
-                  <div key={day} className="flex items-center gap-2 justify-end">
-                    <Label htmlFor={day} className="cursor-pointer">
-                      {DAY_LABELS[day]}
-                    </Label>
-                    <Checkbox
-                      id={day}
-                      checked={selectedDays.includes(day)}
-                      onCheckedChange={() => handleDayToggle(day)}
-                    />
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {DAYS.map((day) => {
+                  const isSelected = selectedDays.includes(day);
+                  return (
+                    <div 
+                      key={day} 
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all",
+                        isSelected 
+                          ? "border-primary bg-primary/5" 
+                          : "border-muted hover:border-muted-foreground/30"
+                      )}
+                      onClick={() => handleDayToggle(day)}
+                    >
+                      <Checkbox
+                        id={day}
+                        checked={isSelected}
+                        onCheckedChange={() => handleDayToggle(day)}
+                        className="pointer-events-none"
+                      />
+                      <Label htmlFor={day} className="cursor-pointer flex-1">
+                        {DAY_LABELS[day]}
+                      </Label>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="text-center text-sm text-primary font-medium pt-2 border-t">
-                الأيام المحددة: {selectedDays.length} أيام
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm text-muted-foreground">الأيام المحددة</span>
+                <Badge variant="secondary" className="font-bold">
+                  {selectedDays.length} أيام
+                </Badge>
               </div>
             </CardContent>
           </Card>
 
           {/* General Settings Card */}
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center gap-2 text-primary">
-                <Settings className="h-5 w-5" />
-                <CardTitle>إعدادات عامة</CardTitle>
+          <Card className="border-0 shadow-card">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Settings className="h-5 w-5 text-foreground" />
+                </div>
+                <div>
+                  <CardTitle>إعدادات عامة</CardTitle>
+                  <CardDescription>إعدادات إضافية للجدولة</CardDescription>
+                </div>
               </div>
-              <CardDescription>إعدادات إضافية للجدولة</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="break" className="text-right block">
+                <Label htmlFor="break">
                   مدة الاستراحة بين المحاضرات (بالدقائق)
                 </Label>
                 <Input
@@ -143,14 +166,18 @@ export default function TimeSlotsPage() {
                   className="text-center"
                 />
               </div>
-              <div className="text-center text-sm text-primary font-medium py-2 bg-muted/50 rounded-md">
-                إجمالي الفترات: {uniqueTimeRanges.length} فترات
+              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/10">
+                <span className="text-sm text-muted-foreground">إجمالي الفترات</span>
+                <Badge className="bg-primary font-bold">
+                  {uniqueTimeRanges.length} فترات
+                </Badge>
               </div>
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="w-full gap-2"
                 onClick={handleRestoreDefaults}
               >
+                <RotateCcw className="h-4 w-4" />
                 استعادة الإعدادات الافتراضية
               </Button>
             </CardContent>
@@ -158,22 +185,26 @@ export default function TimeSlotsPage() {
         </div>
 
         {/* Time Slots Section */}
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex items-center justify-center gap-2 text-primary">
-              <Clock className="h-5 w-5" />
-              <CardTitle>الفترات الزمنية للمحاضرات</CardTitle>
+        <Card className="border-0 shadow-card">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-rose-50">
+                <Clock className="h-5 w-5 text-rose-500" />
+              </div>
+              <div>
+                <CardTitle>الفترات الزمنية للمحاضرات</CardTitle>
+                <CardDescription>حدد أوقات بداية ونهاية كل فترة محاضرة</CardDescription>
+              </div>
             </div>
-            <CardDescription>حدد أوقات بداية ونهاية كل فترة محاضرة</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Add New Slot Form */}
-            <div className="space-y-3">
-              <h3 className="text-center font-semibold">إضافة فترة جديدة</h3>
+            <div className="p-4 bg-muted/30 rounded-xl border-2 border-dashed border-muted-foreground/20">
+              <h3 className="text-sm font-semibold mb-4 text-center">إضافة فترة جديدة</h3>
               <div className="flex flex-col sm:flex-row items-center gap-3" dir="rtl">
                 <div className="flex-1 w-full">
                   <Input
-                    placeholder="مثال: الفترة الخامسة"
+                    placeholder="مثال: الفترة الخامسة (اختياري)"
                     value={newSlot.name}
                     onChange={(e) => setNewSlot({ ...newSlot, name: e.target.value })}
                     className="text-right"
@@ -186,50 +217,58 @@ export default function TimeSlotsPage() {
                         type="time"
                         value={newSlot.start_time}
                         onChange={(e) => setNewSlot({ ...newSlot, start_time: e.target.value })}
-                        className="pl-8"
+                        className="pl-10"
                       />
-                      <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
-                  <span className="text-muted-foreground text-sm">إلى</span>
+                  <span className="text-muted-foreground text-sm font-medium">إلى</span>
                   <div className="flex-1 sm:flex-none">
                     <div className="relative">
                       <Input
                         type="time"
                         value={newSlot.end_time}
                         onChange={(e) => setNewSlot({ ...newSlot, end_time: e.target.value })}
-                        className="pl-8"
+                        className="pl-10"
                       />
-                      <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
                 </div>
                 <Button 
                   onClick={handleAddSlot} 
                   disabled={createTimeSlot.isPending || !newSlot.start_time || !newSlot.end_time}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto gap-2"
                 >
-                  <Plus className="h-4 w-4 ml-2" />
+                  <Plus className="h-4 w-4" />
                   إضافة
                 </Button>
               </div>
             </div>
 
             {/* Existing Slots Table */}
-            <div className="border rounded-lg">
+            <div className="border rounded-xl overflow-hidden">
               {isLoading ? (
-                <p className="text-center py-8">جاري التحميل...</p>
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
+                </div>
               ) : uniqueTimeRanges.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">لا توجد فترات زمنية بعد</p>
+                <div className="empty-state py-12">
+                  <div className="p-4 rounded-full bg-muted mb-4">
+                    <Clock className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                  <p className="font-medium">لا توجد فترات زمنية بعد</p>
+                  <p className="text-sm text-muted-foreground">ابدأ بإضافة الفترات الزمنية للمحاضرات</p>
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="hover:bg-transparent bg-muted/50">
                       <TableHead className="text-right">الفترة</TableHead>
                       <TableHead className="text-center">وقت البداية</TableHead>
                       <TableHead className="text-center">وقت النهاية</TableHead>
                       <TableHead className="text-center">المدة</TableHead>
-                      <TableHead className="w-[80px]"></TableHead>
+                      <TableHead className="w-[60px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -241,26 +280,38 @@ export default function TimeSlotsPage() {
                       const durationMinutes = endMinutes - startMinutes;
                       
                       return (
-                        <TableRow key={slot.id}>
+                        <TableRow key={slot.id} className="table-row-hover">
                           <TableCell className="font-medium text-right">
-                            الفترة {index + 1}
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                                {index + 1}
+                              </div>
+                              الفترة {index + 1}
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            {formatTime(slot.start_time)}
+                            <Badge variant="outline" className="font-mono text-sm">
+                              {formatTime(slot.start_time)}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-center">
-                            {formatTime(slot.end_time)}
+                            <Badge variant="outline" className="font-mono text-sm">
+                              {formatTime(slot.end_time)}
+                            </Badge>
                           </TableCell>
-                          <TableCell className="text-center text-muted-foreground">
-                            {durationMinutes} دقيقة
+                          <TableCell className="text-center">
+                            <span className="text-muted-foreground text-sm">
+                              {durationMinutes} دقيقة
+                            </span>
                           </TableCell>
                           <TableCell>
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="icon-button text-destructive hover:text-destructive"
                               onClick={() => handleDelete(slot.id)}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
