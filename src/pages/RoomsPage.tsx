@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -25,10 +26,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useRooms';
 import { RoomType, ROOM_TYPE_LABELS } from '@/types/database';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, DoorOpen, FlaskConical, Presentation, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function RoomsPage() {
   const { data: rooms, isLoading } = useRooms();
@@ -38,6 +41,7 @@ export default function RoomsPage() {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<{ id: string; name: string; type: RoomType } | null>(null);
+  const [deletingRoom, setDeletingRoom] = useState<{ id: string; name: string } | null>(null);
   const [newRoom, setNewRoom] = useState({ name: '', type: 'lecture' as RoomType });
 
   const handleAdd = async () => {
@@ -53,15 +57,19 @@ export default function RoomsPage() {
     setEditingRoom(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذه القاعة؟')) {
-      await deleteRoom.mutateAsync(id);
-    }
+  const handleDelete = async () => {
+    if (!deletingRoom) return;
+    await deleteRoom.mutateAsync(deletingRoom.id);
+    setDeletingRoom(null);
   };
+
+  const lectureCount = rooms?.filter(r => r.type === 'lecture').length || 0;
+  const labCount = rooms?.filter(r => r.type === 'lab').length || 0;
 
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">إدارة القاعات</h1>
@@ -69,16 +77,24 @@ export default function RoomsPage() {
           </div>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 ml-2" />
+              <Button className="gap-2 shadow-lg shadow-primary/25">
+                <Plus className="h-4 w-4" />
                 إضافة قاعة
               </Button>
             </DialogTrigger>
-            <DialogContent dir="rtl">
+            <DialogContent dir="rtl" className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>إضافة قاعة جديدة</DialogTitle>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <DoorOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <DialogTitle>إضافة قاعة جديدة</DialogTitle>
+                    <DialogDescription>أدخل بيانات القاعة أو المعمل</DialogDescription>
+                  </div>
+                </div>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">اسم القاعة</Label>
                   <Input
@@ -86,6 +102,7 @@ export default function RoomsPage() {
                     value={newRoom.name}
                     onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
                     placeholder="مثال: قاعة 101"
+                    className="text-right"
                   />
                 </div>
                 <div className="space-y-2">
@@ -98,12 +115,22 @@ export default function RoomsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lecture">قاعة محاضرات</SelectItem>
-                      <SelectItem value="lab">معمل</SelectItem>
+                      <SelectItem value="lecture">
+                        <div className="flex items-center gap-2">
+                          <Presentation className="h-4 w-4 text-blue-500" />
+                          قاعة محاضرات
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="lab">
+                        <div className="flex items-center gap-2">
+                          <FlaskConical className="h-4 w-4 text-emerald-500" />
+                          معمل
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={handleAdd} disabled={createRoom.isPending} className="w-full">
+                <Button onClick={handleAdd} disabled={createRoom.isPending || !newRoom.name.trim()} className="w-full">
                   {createRoom.isPending ? 'جاري الإضافة...' : 'إضافة'}
                 </Button>
               </div>
@@ -111,34 +138,109 @@ export default function RoomsPage() {
           </Dialog>
         </div>
 
-        <Card>
+        {/* Summary Cards */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-muted">
+                  <DoorOpen className="h-6 w-6 text-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">إجمالي القاعات</p>
+                  <p className="text-2xl font-bold">{rooms?.length || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-blue-50">
+                  <Presentation className="h-6 w-6 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">قاعات محاضرات</p>
+                  <p className="text-2xl font-bold">{lectureCount}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-emerald-50">
+                  <FlaskConical className="h-6 w-6 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">معامل</p>
+                  <p className="text-2xl font-bold">{labCount}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Rooms Table */}
+        <Card className="border-0 shadow-card">
           <CardHeader>
             <CardTitle>قائمة القاعات</CardTitle>
+            <CardDescription>جميع القاعات والمعامل المسجلة في النظام</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-center py-4">جاري التحميل...</p>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
+              </div>
             ) : rooms?.length === 0 ? (
-              <p className="text-center py-4 text-muted-foreground">لا توجد قاعات بعد</p>
+              <div className="empty-state">
+                <div className="p-4 rounded-full bg-muted mb-4">
+                  <DoorOpen className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <p className="font-medium">لا توجد قاعات بعد</p>
+                <p className="text-sm text-muted-foreground">ابدأ بإضافة القاعات والمعامل</p>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-transparent">
                     <TableHead>الاسم</TableHead>
                     <TableHead>النوع</TableHead>
                     <TableHead className="w-[100px]">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rooms?.map((room) => (
-                    <TableRow key={room.id}>
-                      <TableCell className="font-medium">{room.name}</TableCell>
-                      <TableCell>{ROOM_TYPE_LABELS[room.type]}</TableCell>
+                  {rooms?.map((room, index) => (
+                    <TableRow key={room.id} className="table-row-hover">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "p-2 rounded-lg",
+                            room.type === 'lecture' ? 'bg-blue-50' : 'bg-emerald-50'
+                          )}>
+                            {room.type === 'lecture' ? (
+                              <Presentation className="h-4 w-4 text-blue-500" />
+                            ) : (
+                              <FlaskConical className="h-4 w-4 text-emerald-500" />
+                            )}
+                          </div>
+                          {room.name}
+                        </div>
+                      </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={cn(
+                          "font-medium",
+                          room.type === 'lecture' ? 'badge-lecture' : 'badge-lab'
+                        )}>
+                          {ROOM_TYPE_LABELS[room.type]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="icon-button"
                             onClick={() => setEditingRoom({ id: room.id, name: room.name, type: room.type })}
                           >
                             <Pencil className="h-4 w-4" />
@@ -146,9 +248,10 @@ export default function RoomsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(room.id)}
+                            className="icon-button text-destructive hover:text-destructive"
+                            onClick={() => setDeletingRoom({ id: room.id, name: room.name })}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -162,18 +265,27 @@ export default function RoomsPage() {
 
         {/* Edit Dialog */}
         <Dialog open={!!editingRoom} onOpenChange={() => setEditingRoom(null)}>
-          <DialogContent dir="rtl">
+          <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>تعديل القاعة</DialogTitle>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Pencil className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <DialogTitle>تعديل القاعة</DialogTitle>
+                  <DialogDescription>قم بتحديث بيانات القاعة</DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
             {editingRoom && (
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-name">اسم القاعة</Label>
                   <Input
                     id="edit-name"
                     value={editingRoom.name}
                     onChange={(e) => setEditingRoom({ ...editingRoom, name: e.target.value })}
+                    className="text-right"
                   />
                 </div>
                 <div className="space-y-2">
@@ -186,14 +298,58 @@ export default function RoomsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lecture">قاعة محاضرات</SelectItem>
-                      <SelectItem value="lab">معمل</SelectItem>
+                      <SelectItem value="lecture">
+                        <div className="flex items-center gap-2">
+                          <Presentation className="h-4 w-4 text-blue-500" />
+                          قاعة محاضرات
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="lab">
+                        <div className="flex items-center gap-2">
+                          <FlaskConical className="h-4 w-4 text-emerald-500" />
+                          معمل
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <Button onClick={handleUpdate} disabled={updateRoom.isPending} className="w-full">
                   {updateRoom.isPending ? 'جاري التحديث...' : 'تحديث'}
                 </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!deletingRoom} onOpenChange={() => setDeletingRoom(null)}>
+          <DialogContent dir="rtl" className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <DialogTitle>تأكيد الحذف</DialogTitle>
+                  <DialogDescription>هل أنت متأكد من حذف هذه القاعة؟</DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            {deletingRoom && (
+              <div className="space-y-4 mt-4">
+                <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20">
+                  <p className="text-sm text-center">
+                    سيتم حذف القاعة <span className="font-bold">{deletingRoom.name}</span> نهائياً
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setDeletingRoom(null)} className="flex-1">
+                    إلغاء
+                  </Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleteRoom.isPending} className="flex-1">
+                    {deleteRoom.isPending ? 'جاري الحذف...' : 'حذف'}
+                  </Button>
+                </div>
               </div>
             )}
           </DialogContent>
