@@ -24,8 +24,11 @@ import { useProfessors, useCreateProfessor, useUpdateProfessor, useDeleteProfess
 import { Plus, Pencil, Trash2, CalendarOff, GraduationCap, AlertTriangle, User } from 'lucide-react';
 import { ProfessorUnavailabilityDialog } from '@/components/ProfessorUnavailabilityDialog';
 import { cn } from '@/lib/utils';
+import { useIsActiveSubscription } from '@/hooks/useSubscription';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 
 export default function ProfessorsPage() {
+  const { isActive: isActiveSubscription } = useIsActiveSubscription();
   const { data: professors, isLoading } = useProfessors();
   const createProfessor = useCreateProfessor();
   const updateProfessor = useUpdateProfessor();
@@ -59,19 +62,23 @@ export default function ProfessorsPage() {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Subscription Banner */}
+        <SubscriptionBanner />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">إدارة الدكاترة</h1>
             <p className="text-muted-foreground mt-1">إضافة وتعديل وحذف أعضاء هيئة التدريس</p>
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 shadow-lg shadow-primary/25">
-                <Plus className="h-4 w-4" />
-                إضافة دكتور
-              </Button>
-            </DialogTrigger>
+          {isActiveSubscription && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 shadow-lg shadow-primary/25">
+                  <Plus className="h-4 w-4" />
+                  إضافة دكتور
+                </Button>
+              </DialogTrigger>
             <DialogContent dir="rtl" className="sm:max-w-md">
               <DialogHeader>
                 <div className="flex items-center gap-3">
@@ -101,6 +108,7 @@ export default function ProfessorsPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Summary Card */}
@@ -164,6 +172,7 @@ export default function ProfessorsPage() {
                             className="icon-button text-warning hover:text-warning"
                             onClick={() => setUnavailabilityProfessor({ id: professor.id, name: professor.name })}
                             title="أوقات عدم التوفر"
+                            disabled={!isActiveSubscription}
                           >
                             <CalendarOff className="h-4 w-4" />
                           </Button>
@@ -172,6 +181,7 @@ export default function ProfessorsPage() {
                             size="icon"
                             className="icon-button"
                             onClick={() => setEditingProfessor({ id: professor.id, name: professor.name })}
+                            disabled={!isActiveSubscription}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -180,6 +190,7 @@ export default function ProfessorsPage() {
                             size="icon"
                             className="icon-button text-destructive hover:text-destructive"
                             onClick={() => setDeletingProfessor({ id: professor.id, name: professor.name })}
+                            disabled={!isActiveSubscription}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

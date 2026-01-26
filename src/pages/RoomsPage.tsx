@@ -32,8 +32,11 @@ import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/u
 import { RoomType, ROOM_TYPE_LABELS } from '@/types/database';
 import { Plus, Pencil, Trash2, DoorOpen, FlaskConical, Presentation, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsActiveSubscription } from '@/hooks/useSubscription';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 
 export default function RoomsPage() {
+  const { isActive: isActiveSubscription } = useIsActiveSubscription();
   const { data: rooms, isLoading } = useRooms();
   const createRoom = useCreateRoom();
   const updateRoom = useUpdateRoom();
@@ -69,19 +72,23 @@ export default function RoomsPage() {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Subscription Banner */}
+        <SubscriptionBanner />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">إدارة القاعات</h1>
             <p className="text-muted-foreground mt-1">إضافة وتعديل وحذف القاعات والمعامل</p>
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 shadow-lg shadow-primary/25">
-                <Plus className="h-4 w-4" />
-                إضافة قاعة
-              </Button>
-            </DialogTrigger>
+          {isActiveSubscription && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 shadow-lg shadow-primary/25">
+                  <Plus className="h-4 w-4" />
+                  إضافة قاعة
+                </Button>
+              </DialogTrigger>
             <DialogContent dir="rtl" className="sm:max-w-md">
               <DialogHeader>
                 <div className="flex items-center gap-3">
@@ -136,6 +143,7 @@ export default function RoomsPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Summary Cards */}
@@ -242,6 +250,7 @@ export default function RoomsPage() {
                             size="icon"
                             className="icon-button"
                             onClick={() => setEditingRoom({ id: room.id, name: room.name, type: room.type })}
+                            disabled={!isActiveSubscription}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -250,6 +259,7 @@ export default function RoomsPage() {
                             size="icon"
                             className="icon-button text-destructive hover:text-destructive"
                             onClick={() => setDeletingRoom({ id: room.id, name: room.name })}
+                            disabled={!isActiveSubscription}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
