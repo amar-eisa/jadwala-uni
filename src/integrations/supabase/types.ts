@@ -23,6 +23,7 @@ export type Database = {
           id: string
           professor_id: string
           start_time: string | null
+          user_id: string | null
         }
         Insert: {
           all_day?: boolean
@@ -32,6 +33,7 @@ export type Database = {
           id?: string
           professor_id: string
           start_time?: string | null
+          user_id?: string | null
         }
         Update: {
           all_day?: boolean
@@ -41,6 +43,7 @@ export type Database = {
           id?: string
           professor_id?: string
           start_time?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -58,18 +61,45 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -80,6 +110,7 @@ export type Database = {
           name: string
           type: Database["public"]["Enums"]["room_type"]
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -87,6 +118,7 @@ export type Database = {
           name: string
           type?: Database["public"]["Enums"]["room_type"]
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -94,6 +126,7 @@ export type Database = {
           name?: string
           type?: Database["public"]["Enums"]["room_type"]
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -104,6 +137,7 @@ export type Database = {
           room_id: string
           subject_id: string
           time_slot_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -111,6 +145,7 @@ export type Database = {
           room_id: string
           subject_id: string
           time_slot_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -118,6 +153,7 @@ export type Database = {
           room_id?: string
           subject_id?: string
           time_slot_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -149,18 +185,21 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -174,6 +213,7 @@ export type Database = {
           professor_id: string
           type: Database["public"]["Enums"]["subject_type"]
           updated_at: string
+          user_id: string | null
           weekly_hours: number
         }
         Insert: {
@@ -185,6 +225,7 @@ export type Database = {
           professor_id: string
           type?: Database["public"]["Enums"]["subject_type"]
           updated_at?: string
+          user_id?: string | null
           weekly_hours?: number
         }
         Update: {
@@ -196,6 +237,7 @@ export type Database = {
           professor_id?: string
           type?: Database["public"]["Enums"]["subject_type"]
           updated_at?: string
+          user_id?: string | null
           weekly_hours?: number
         }
         Relationships: [
@@ -223,6 +265,7 @@ export type Database = {
           id: string
           start_time: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -231,6 +274,7 @@ export type Database = {
           id?: string
           start_time: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -239,6 +283,7 @@ export type Database = {
           id?: string
           start_time?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

@@ -27,6 +27,9 @@ export function useCreateSubject() {
   
   return useMutation({
     mutationFn: async (subject: { name: string; professor_id: string; group_id: string; type: SubjectType; weekly_hours: number }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('يجب تسجيل الدخول');
+
       const { data, error } = await supabase
         .from('subjects')
         .insert([{ 
@@ -34,7 +37,8 @@ export function useCreateSubject() {
           professor_id: subject.professor_id,
           group_id: subject.group_id,
           type: subject.type,
-          weekly_hours: subject.weekly_hours
+          weekly_hours: subject.weekly_hours,
+          user_id: user.id
         }] as any)
         .select()
         .single();
