@@ -10,7 +10,8 @@ import {
   Calendar,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsAdmin } from '@/hooks/useAdmin';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
@@ -36,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
 
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
@@ -52,6 +55,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
     timeSlots: timeSlots?.length || 0,
     schedule: scheduleEntries?.length || 0,
   };
+
+  // Add admin link if user is admin
+  const navItems = isAdmin 
+    ? [...navigation, { name: 'الإدارة', href: '/admin', icon: Shield, countKey: null }]
+    : navigation;
 
   const handleSignOut = async () => {
     await signOut();
@@ -97,7 +105,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1 p-4">
-          {navigation.map((item) => {
+          {navItems.map((item) => {
             const isActive = location.pathname === item.href;
             const count = item.countKey ? counts[item.countKey] : null;
             

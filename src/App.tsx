@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import Dashboard from "./pages/Dashboard";
 import RoomsPage from "./pages/RoomsPage";
 import ProfessorsPage from "./pages/ProfessorsPage";
@@ -12,6 +13,7 @@ import GroupsPage from "./pages/GroupsPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import TimeSlotsPage from "./pages/TimeSlotsPage";
 import TimetablePage from "./pages/TimetablePage";
+import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +35,7 @@ const App = () => (
             <Route path="/subjects" element={<ProtectedRoute><SubjectsPage /></ProtectedRoute>} />
             <Route path="/time-slots" element={<ProtectedRoute><TimeSlotsPage /></ProtectedRoute>} />
             <Route path="/timetable" element={<ProtectedRoute><TimetablePage /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
