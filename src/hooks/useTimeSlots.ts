@@ -75,11 +75,17 @@ export function useDeleteTimeSlot() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (params: { start_time: string; end_time: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('يجب تسجيل الدخول');
+
+      // حذف جميع الفترات الزمنية بنفس الأوقات للمستخدم الحالي
       const { error } = await supabase
         .from('time_slots')
         .delete()
-        .eq('id', id);
+        .eq('user_id', user.id)
+        .eq('start_time', params.start_time)
+        .eq('end_time', params.end_time);
       
       if (error) throw error;
     },

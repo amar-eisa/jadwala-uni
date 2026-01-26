@@ -16,7 +16,8 @@ import {
 } from '@/components/ui/table';
 import { useTimeSlots, useCreateTimeSlot, useDeleteTimeSlot } from '@/hooks/useTimeSlots';
 import { DayOfWeek, DAY_LABELS } from '@/types/database';
-import { Plus, Trash2, Clock, Calendar, Settings, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Clock, Calendar, Settings, RotateCcw, Loader2 } from 'lucide-react';
+import { TimeSlot } from '@/types/database';
 import { cn } from '@/lib/utils';
 
 const DAYS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
@@ -56,8 +57,21 @@ export default function TimeSlotsPage() {
     setNewSlot({ name: '', start_time: '', end_time: '' });
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteTimeSlot.mutateAsync(id);
+  const handleDelete = async (slot: TimeSlot) => {
+    const daysCount = timeSlots?.filter(
+      s => s.start_time === slot.start_time && s.end_time === slot.end_time
+    ).length || 0;
+    
+    const confirmed = window.confirm(
+      `هل أنت متأكد من حذف هذه الفترة؟\nسيتم حذفها من ${daysCount} يوم/أيام`
+    );
+    
+    if (confirmed) {
+      await deleteTimeSlot.mutateAsync({
+        start_time: slot.start_time,
+        end_time: slot.end_time
+      });
+    }
   };
 
   const handleRestoreDefaults = () => {
@@ -76,6 +90,13 @@ export default function TimeSlotsPage() {
     }
     return acc;
   }, [] as typeof timeSlots) || [];
+
+  // حساب عدد الأيام لكل فترة زمنية
+  const getSlotDaysCount = (slot: TimeSlot) => {
+    return timeSlots?.filter(
+      s => s.start_time === slot.start_time && s.end_time === slot.end_time
+    ).length || 0;
+  };
 
   return (
     <Layout>
@@ -268,6 +289,7 @@ export default function TimeSlotsPage() {
                       <TableHead className="text-center">وقت البداية</TableHead>
                       <TableHead className="text-center">وقت النهاية</TableHead>
                       <TableHead className="text-center">المدة</TableHead>
+                      <TableHead className="text-center">الأيام</TableHead>
                       <TableHead className="w-[60px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -304,14 +326,24 @@ export default function TimeSlotsPage() {
                               {durationMinutes} دقيقة
                             </span>
                           </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary" className="text-xs">
+                              {getSlotDaysCount(slot)} أيام
+                            </Badge>
+                          </TableCell>
                           <TableCell>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="icon-button text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(slot.id)}
+                              onClick={() => handleDelete(slot)}
+                              disabled={deleteTimeSlot.isPending}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deleteTimeSlot.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>
