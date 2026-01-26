@@ -34,8 +34,11 @@ import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2, BookOpen, AlertTriangle, FlaskConical, FileText, Clock } from 'lucide-react';
 import { SubjectType, SUBJECT_TYPE_LABELS } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { useIsActiveSubscription } from '@/hooks/useSubscription';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 
 export default function SubjectsPage() {
+  const { isActive: isActiveSubscription } = useIsActiveSubscription();
   const { data: subjects, isLoading } = useSubjects();
   const { data: professors } = useProfessors();
   const { data: groups } = useStudentGroups();
@@ -86,19 +89,23 @@ export default function SubjectsPage() {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Subscription Banner */}
+        <SubscriptionBanner />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">إدارة المواد</h1>
             <p className="text-muted-foreground mt-1">إضافة وتعديل وحذف المواد الدراسية</p>
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 shadow-lg shadow-primary/25" disabled={!professors?.length || !groups?.length}>
-                <Plus className="h-4 w-4" />
-                إضافة مادة
-              </Button>
-            </DialogTrigger>
+          {isActiveSubscription && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 shadow-lg shadow-primary/25" disabled={!professors?.length || !groups?.length}>
+                  <Plus className="h-4 w-4" />
+                  إضافة مادة
+                </Button>
+              </DialogTrigger>
             <DialogContent dir="rtl" className="sm:max-w-lg">
               <DialogHeader>
                 <div className="flex items-center gap-3">
@@ -204,6 +211,7 @@ export default function SubjectsPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Warning if no professors or groups */}
@@ -351,6 +359,7 @@ export default function SubjectsPage() {
                                 type: subject.type,
                                 weekly_hours: subject.weekly_hours
                               })}
+                              disabled={!isActiveSubscription}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -359,6 +368,7 @@ export default function SubjectsPage() {
                               size="icon"
                               className="icon-button text-destructive hover:text-destructive"
                               onClick={() => setDeletingSubject({ id: subject.id, name: subject.name })}
+                              disabled={!isActiveSubscription}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

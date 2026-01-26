@@ -39,6 +39,8 @@ import {
   closestCenter,
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { useIsActiveSubscription } from '@/hooks/useSubscription';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
@@ -127,6 +129,7 @@ function DroppableSlot({ id, children, isEmpty }: { id: string; children: React.
 }
 
 export default function TimetablePage() {
+  const { isActive: isActiveSubscription } = useIsActiveSubscription();
   const { data: scheduleEntries, isLoading } = useScheduleEntries();
   const { data: timeSlots } = useTimeSlots();
   const { data: rooms } = useRooms();
@@ -278,6 +281,9 @@ export default function TimetablePage() {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Subscription Banner */}
+        <SubscriptionBanner />
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -289,11 +295,11 @@ export default function TimetablePage() {
               <FileDown className="h-4 w-4" />
               تصدير PDF
             </Button>
-            <Button variant="outline" onClick={() => confirm('مسح الجدول؟') && clearSchedule.mutateAsync()} disabled={clearSchedule.isPending || !scheduleEntries?.length} className="gap-2">
+            <Button variant="outline" onClick={() => confirm('مسح الجدول؟') && clearSchedule.mutateAsync()} disabled={clearSchedule.isPending || !scheduleEntries?.length || !isActiveSubscription} className="gap-2">
               <Trash2 className="h-4 w-4" />
               مسح
             </Button>
-            <Button onClick={() => generateSchedule.mutateAsync()} disabled={generateSchedule.isPending || !canGenerate} className="gap-2 shadow-lg shadow-primary/25">
+            <Button onClick={() => generateSchedule.mutateAsync()} disabled={generateSchedule.isPending || !canGenerate || !isActiveSubscription} className="gap-2 shadow-lg shadow-primary/25">
               <Wand2 className="h-4 w-4" />
               {generateSchedule.isPending ? 'جاري...' : 'توليد'}
             </Button>

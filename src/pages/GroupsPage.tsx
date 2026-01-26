@@ -22,8 +22,11 @@ import {
 } from '@/components/ui/dialog';
 import { useStudentGroups, useCreateStudentGroup, useUpdateStudentGroup, useDeleteStudentGroup } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2, Users, AlertTriangle, UserCircle } from 'lucide-react';
+import { useIsActiveSubscription } from '@/hooks/useSubscription';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 
 export default function GroupsPage() {
+  const { isActive: isActiveSubscription } = useIsActiveSubscription();
   const { data: groups, isLoading } = useStudentGroups();
   const createGroup = useCreateStudentGroup();
   const updateGroup = useUpdateStudentGroup();
@@ -56,19 +59,23 @@ export default function GroupsPage() {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Subscription Banner */}
+        <SubscriptionBanner />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">إدارة المجموعات</h1>
             <p className="text-muted-foreground mt-1">إضافة وتعديل وحذف مجموعات الطلاب</p>
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 shadow-lg shadow-primary/25">
-                <Plus className="h-4 w-4" />
-                إضافة مجموعة
-              </Button>
-            </DialogTrigger>
+          {isActiveSubscription && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 shadow-lg shadow-primary/25">
+                  <Plus className="h-4 w-4" />
+                  إضافة مجموعة
+                </Button>
+              </DialogTrigger>
             <DialogContent dir="rtl" className="sm:max-w-md">
               <DialogHeader>
                 <div className="flex items-center gap-3">
@@ -98,6 +105,7 @@ export default function GroupsPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Summary Card */}
@@ -160,6 +168,7 @@ export default function GroupsPage() {
                             size="icon"
                             className="icon-button"
                             onClick={() => setEditingGroup({ id: group.id, name: group.name })}
+                            disabled={!isActiveSubscription}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -168,6 +177,7 @@ export default function GroupsPage() {
                             size="icon"
                             className="icon-button text-destructive hover:text-destructive"
                             onClick={() => setDeletingGroup({ id: group.id, name: group.name })}
+                            disabled={!isActiveSubscription}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

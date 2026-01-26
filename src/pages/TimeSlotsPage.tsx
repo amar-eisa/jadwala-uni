@@ -19,10 +19,13 @@ import { DayOfWeek, DAY_LABELS } from '@/types/database';
 import { Plus, Trash2, Clock, Calendar, Settings, RotateCcw, Loader2 } from 'lucide-react';
 import { TimeSlot } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { useIsActiveSubscription } from '@/hooks/useSubscription';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 
 const DAYS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
 export default function TimeSlotsPage() {
+  const { isActive: isActiveSubscription } = useIsActiveSubscription();
   const { data: timeSlots, isLoading } = useTimeSlots();
   const createTimeSlot = useCreateTimeSlot();
   const deleteTimeSlot = useDeleteTimeSlot();
@@ -101,6 +104,9 @@ export default function TimeSlotsPage() {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Subscription Banner */}
+        <SubscriptionBanner />
+
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">إدارة الفترات الزمنية</h1>
@@ -130,18 +136,21 @@ export default function TimeSlotsPage() {
                     <div 
                       key={day} 
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all",
+                        "flex items-center gap-3 p-3 rounded-xl border-2 transition-all",
+                        !isActiveSubscription && "opacity-50 cursor-not-allowed",
+                        isActiveSubscription && "cursor-pointer",
                         isSelected 
                           ? "border-primary bg-primary/5" 
                           : "border-muted hover:border-muted-foreground/30"
                       )}
-                      onClick={() => handleDayToggle(day)}
+                      onClick={() => isActiveSubscription && handleDayToggle(day)}
                     >
                       <Checkbox
                         id={day}
                         checked={isSelected}
                         onCheckedChange={() => handleDayToggle(day)}
                         className="pointer-events-none"
+                        disabled={!isActiveSubscription}
                       />
                       <Label htmlFor={day} className="cursor-pointer flex-1">
                         {DAY_LABELS[day]}
@@ -185,6 +194,7 @@ export default function TimeSlotsPage() {
                   value={breakDuration}
                   onChange={(e) => setBreakDuration(Number(e.target.value))}
                   className="text-center"
+                  disabled={!isActiveSubscription}
                 />
               </div>
               <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/10">
@@ -197,6 +207,7 @@ export default function TimeSlotsPage() {
                 variant="outline" 
                 className="w-full gap-2"
                 onClick={handleRestoreDefaults}
+                disabled={!isActiveSubscription}
               >
                 <RotateCcw className="h-4 w-4" />
                 استعادة الإعدادات الافتراضية
@@ -220,17 +231,18 @@ export default function TimeSlotsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Add New Slot Form */}
-            <div className="p-4 bg-muted/30 rounded-xl border-2 border-dashed border-muted-foreground/20">
-              <h3 className="text-sm font-semibold mb-4 text-center">إضافة فترة جديدة</h3>
-              <div className="flex flex-col sm:flex-row items-center gap-3" dir="rtl">
-                <div className="flex-1 w-full">
-                  <Input
-                    placeholder="مثال: الفترة الخامسة (اختياري)"
-                    value={newSlot.name}
-                    onChange={(e) => setNewSlot({ ...newSlot, name: e.target.value })}
-                    className="text-right"
-                  />
-                </div>
+            {isActiveSubscription && (
+              <div className="p-4 bg-muted/30 rounded-xl border-2 border-dashed border-muted-foreground/20">
+                <h3 className="text-sm font-semibold mb-4 text-center">إضافة فترة جديدة</h3>
+                <div className="flex flex-col sm:flex-row items-center gap-3" dir="rtl">
+                  <div className="flex-1 w-full">
+                    <Input
+                      placeholder="مثال: الفترة الخامسة (اختياري)"
+                      value={newSlot.name}
+                      onChange={(e) => setNewSlot({ ...newSlot, name: e.target.value })}
+                      className="text-right"
+                    />
+                  </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <div className="flex-1 sm:flex-none">
                     <div className="relative">
@@ -262,10 +274,11 @@ export default function TimeSlotsPage() {
                   className="w-full sm:w-auto gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  إضافة
-                </Button>
+                    إضافة
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Existing Slots Table */}
             <div className="border rounded-xl overflow-hidden">
@@ -337,7 +350,7 @@ export default function TimeSlotsPage() {
                               size="icon"
                               className="icon-button text-destructive hover:text-destructive"
                               onClick={() => handleDelete(slot)}
-                              disabled={deleteTimeSlot.isPending}
+                              disabled={deleteTimeSlot.isPending || !isActiveSubscription}
                             >
                               {deleteTimeSlot.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
