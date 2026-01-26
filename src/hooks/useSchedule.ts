@@ -31,7 +31,12 @@ export function useGenerateSchedule() {
   
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('generate-schedule');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('يجب تسجيل الدخول');
+
+      const { data, error } = await supabase.functions.invoke('generate-schedule', {
+        body: { user_id: user.id }
+      });
       
       if (error) throw error;
       return data;

@@ -23,9 +23,12 @@ export function useCreateProfessor() {
   
   return useMutation({
     mutationFn: async (professor: { name: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('يجب تسجيل الدخول');
+
       const { data, error } = await supabase
         .from('professors')
-        .insert(professor)
+        .insert({ ...professor, user_id: user.id } as any)
         .select()
         .single();
       

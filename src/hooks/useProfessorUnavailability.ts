@@ -43,6 +43,9 @@ export function useAddProfessorUnavailability() {
       end_time?: string | null;
       all_day?: boolean;
     }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('يجب تسجيل الدخول');
+
       const { data, error } = await supabase
         .from('professor_unavailability')
         .insert({
@@ -51,7 +54,8 @@ export function useAddProfessorUnavailability() {
           start_time: unavailability.all_day ? null : unavailability.start_time,
           end_time: unavailability.all_day ? null : unavailability.end_time,
           all_day: unavailability.all_day ?? false,
-        })
+          user_id: user.id,
+        } as any)
         .select()
         .single();
       

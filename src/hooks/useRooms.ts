@@ -23,9 +23,12 @@ export function useCreateRoom() {
   
   return useMutation({
     mutationFn: async (room: { name: string; type: RoomType }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('يجب تسجيل الدخول');
+
       const { data, error } = await supabase
         .from('rooms')
-        .insert(room)
+        .insert({ ...room, user_id: user.id } as any)
         .select()
         .single();
       

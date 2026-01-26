@@ -23,9 +23,12 @@ export function useCreateStudentGroup() {
   
   return useMutation({
     mutationFn: async (group: { name: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('يجب تسجيل الدخول');
+
       const { data, error } = await supabase
         .from('student_groups')
-        .insert(group)
+        .insert({ ...group, user_id: user.id } as any)
         .select()
         .single();
       

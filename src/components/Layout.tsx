@@ -10,7 +10,7 @@ import {
   Calendar,
   Menu,
   X,
-  ChevronLeft
+  LogOut
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
@@ -34,6 +35,7 @@ const navigation = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
@@ -49,6 +51,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     subjects: subjects?.length || 0,
     timeSlots: timeSlots?.length || 0,
     schedule: scheduleEntries?.length || 0,
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -133,16 +139,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* User Info & Sign Out */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">
-          <div className="bg-sidebar-accent rounded-xl p-4">
-            <p className="text-xs text-sidebar-foreground/60 text-center">
-              نظام جدولة المحاضرات الأكاديمي
-            </p>
-            <p className="text-xs text-sidebar-foreground/40 text-center mt-1">
-              الإصدار 2.0
-            </p>
-          </div>
+          {user && (
+            <div className="bg-sidebar-accent rounded-xl p-4 space-y-3">
+              <div className="text-center">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {user.user_metadata?.full_name || user.email}
+                </p>
+                {user.user_metadata?.full_name && (
+                  <p className="text-xs text-sidebar-foreground/60 truncate">
+                    {user.email}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-border"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 ml-2" />
+                تسجيل الخروج
+              </Button>
+            </div>
+          )}
         </div>
       </aside>
 
