@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       toast({
         title: 'تم إنشاء الحساب بنجاح',
-        description: 'مرحباً بك في نظام الجدولة',
+        description: 'حسابك في انتظار موافقة المدير',
       });
       
       return { error: null };

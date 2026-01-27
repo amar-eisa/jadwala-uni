@@ -14,7 +14,7 @@ export interface UserWithDetails {
     status: string;
     price: number;
     currency: string;
-    start_date: string;
+    start_date: string | null;
     end_date: string | null;
   } | null;
 }
@@ -112,6 +112,7 @@ export function useUpdateSubscription() {
         plan_name?: string;
         status?: string;
         price?: number;
+        start_date?: string | null;
         end_date?: string | null;
       };
     }) => {
@@ -171,6 +172,107 @@ export function useUpdateUserRole() {
         if (error) throw error;
         return data;
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+    },
+  });
+}
+
+export function useApproveUser() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      subscriptionId,
+      startDate,
+      endDate
+    }: { 
+      subscriptionId: string;
+      startDate?: string;
+      endDate?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update({ 
+          status: 'active',
+          start_date: startDate || new Date().toISOString(),
+          end_date: endDate || null,
+        })
+        .eq('id', subscriptionId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+    },
+  });
+}
+
+export function useRejectUser() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      // Delete user data in order (to respect foreign keys)
+      // 1. Delete schedule entries
+      await supabase.from('schedule_entries').delete().eq('user_id', userId);
+      // 2. Delete professor unavailability
+      await supabase.from('professor_unavailability').delete().eq('user_id', userId);
+      // 3. Delete subjects
+      await supabase.from('subjects').delete().eq('user_id', userId);
+      // 4. Delete professors
+      await supabase.from('professors').delete().eq('user_id', userId);
+      // 5. Delete student groups
+      await supabase.from('student_groups').delete().eq('user_id', userId);
+      // 6. Delete rooms
+      await supabase.from('rooms').delete().eq('user_id', userId);
+      // 7. Delete time slots
+      await supabase.from('time_slots').delete().eq('user_id', userId);
+      // 8. Delete subscription
+      await supabase.from('subscriptions').delete().eq('user_id', userId);
+      // 9. Delete user role
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      // 10. Delete profile
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+    },
+  });
+}
+
+export function useDeleteUser() {
+  const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      // Prevent self-deletion
+      if (userId === currentUser?.id) {
+        throw new Error('لا يمكنك حذف حسابك');
+      }
+      
+      // Delete user data in order (to respect foreign keys)
+      await supabase.from('schedule_entries').delete().eq('user_id', userId);
+      await supabase.from('professor_unavailability').delete().eq('user_id', userId);
+      await supabase.from('subjects').delete().eq('user_id', userId);
+      await supabase.from('professors').delete().eq('user_id', userId);
+      await supabase.from('student_groups').delete().eq('user_id', userId);
+      await supabase.from('rooms').delete().eq('user_id', userId);
+      await supabase.from('time_slots').delete().eq('user_id', userId);
+      await supabase.from('subscriptions').delete().eq('user_id', userId);
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      
+      if (error) throw error;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });

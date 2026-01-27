@@ -15,6 +15,7 @@ import TimeSlotsPage from "./pages/TimeSlotsPage";
 import TimetablePage from "./pages/TimetablePage";
 import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
+import PendingApprovalPage from "./pages/PendingApprovalPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/pending-approval" element={<PendingApprovalPage />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/rooms" element={<ProtectedRoute><RoomsPage /></ProtectedRoute>} />
             <Route path="/professors" element={<ProtectedRoute><ProfessorsPage /></ProtectedRoute>} />
