@@ -97,6 +97,19 @@ export default function Dashboard() {
     (timeSlots?.length || 0) > 0,
   ].filter(Boolean).length;
   const progressPercentage = (completedSteps / totalSteps) * 100;
+  const isSetupComplete = completedSteps === totalSteps;
+
+  // System statistics (when setup is complete)
+  const uniqueDays = [...new Set(timeSlots?.map(ts => ts.day) || [])];
+  const totalDays = uniqueDays.length;
+  const totalLectures = scheduleEntries?.length || 0;
+  const avgLecturesPerDay = totalDays > 0 
+    ? (totalLectures / totalDays).toFixed(1) 
+    : '0';
+  const totalSlots = (rooms?.length || 1) * (timeSlots?.length || 1);
+  const utilizationRate = totalSlots > 0 
+    ? Math.round((totalLectures / totalSlots) * 100) 
+    : 0;
 
   return (
     <Layout>
@@ -150,65 +163,110 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Setup Progress & Schedule Status */}
+        {/* Setup Progress / System Statistics & Schedule Status */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Setup Progress */}
-          <Card className="border-0 shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                تقدم إعداد النظام
-              </CardTitle>
-              <CardDescription>
-                أكمل الخطوات التالية لتوليد الجدول
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>اكتمال الإعداد</span>
-                  <span className="font-medium">{completedSteps}/{totalSteps}</span>
+          {/* Conditional: Setup Progress OR System Statistics */}
+          {isSetupComplete ? (
+            /* System Statistics Card */
+            <Card className="border-0 shadow-card">
+              <div className="h-2 bg-gradient-to-l from-success to-emerald-400" />
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-success" />
+                  إحصائيات النظام
+                </CardTitle>
+                <CardDescription>
+                  نظرة سريعة على بيانات الجدولة
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-primary/10 rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">{totalLectures}</p>
+                    <p className="text-sm text-muted-foreground mt-1">محاضرة</p>
+                  </div>
+                  <div className="bg-info/10 rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-info">{totalDays}</p>
+                    <p className="text-sm text-muted-foreground mt-1">أيام عمل</p>
+                  </div>
+                  <div className="bg-violet-500/10 rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-violet-500">{avgLecturesPerDay}</p>
+                    <p className="text-sm text-muted-foreground mt-1">محاضرة/يوم</p>
+                  </div>
+                  <div className="bg-amber-500/10 rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-amber-500">{utilizationRate}%</p>
+                    <p className="text-sm text-muted-foreground mt-1">نسبة الاستخدام</p>
+                  </div>
                 </div>
-                <Progress value={progressPercentage} className="h-2" />
-              </div>
-              
-              <div className="space-y-3">
-                {[
-                  { label: 'إضافة قاعات', done: (rooms?.length || 0) > 0, href: '/rooms' },
-                  { label: 'إضافة دكاترة', done: (professors?.length || 0) > 0, href: '/professors' },
-                  { label: 'إضافة مجموعات', done: (groups?.length || 0) > 0, href: '/groups' },
-                  { label: 'إضافة مواد', done: (subjects?.length || 0) > 0, href: '/subjects' },
-                  { label: 'تحديد الفترات الزمنية', done: (timeSlots?.length || 0) > 0, href: '/time-slots' },
-                ].map((step) => (
-                  <Link
-                    key={step.label}
-                    to={step.href}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg transition-colors",
-                      step.done 
-                        ? "bg-success/10 text-success" 
-                        : "bg-muted hover:bg-muted/80"
-                    )}
-                  >
-                    {step.done ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
-                    )}
-                    <span className={cn(
-                      "text-sm font-medium",
-                      step.done ? "text-success" : "text-foreground"
-                    )}>
-                      {step.label}
-                    </span>
-                    {!step.done && (
-                      <ArrowLeft className="h-4 w-4 mr-auto text-muted-foreground" />
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-success/10">
+                  <CheckCircle2 className="h-6 w-6 text-success" />
+                  <div>
+                    <p className="font-medium text-success">النظام جاهز ومكتمل</p>
+                    <p className="text-sm text-muted-foreground">جميع البيانات الأساسية متوفرة</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            /* Setup Progress Card */
+            <Card className="border-0 shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  تقدم إعداد النظام
+                </CardTitle>
+                <CardDescription>
+                  أكمل الخطوات التالية لتوليد الجدول
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>اكتمال الإعداد</span>
+                    <span className="font-medium">{completedSteps}/{totalSteps}</span>
+                  </div>
+                  <Progress value={progressPercentage} className="h-2" />
+                </div>
+                
+                <div className="space-y-3">
+                  {[
+                    { label: 'إضافة قاعات', done: (rooms?.length || 0) > 0, href: '/rooms' },
+                    { label: 'إضافة دكاترة', done: (professors?.length || 0) > 0, href: '/professors' },
+                    { label: 'إضافة مجموعات', done: (groups?.length || 0) > 0, href: '/groups' },
+                    { label: 'إضافة مواد', done: (subjects?.length || 0) > 0, href: '/subjects' },
+                    { label: 'تحديد الفترات الزمنية', done: (timeSlots?.length || 0) > 0, href: '/time-slots' },
+                  ].map((step) => (
+                    <Link
+                      key={step.label}
+                      to={step.href}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg transition-colors",
+                        step.done 
+                          ? "bg-success/10 text-success" 
+                          : "bg-muted hover:bg-muted/80"
+                      )}
+                    >
+                      {step.done ? (
+                        <CheckCircle2 className="h-5 w-5" />
+                      ) : (
+                        <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                      )}
+                      <span className={cn(
+                        "text-sm font-medium",
+                        step.done ? "text-success" : "text-foreground"
+                      )}>
+                        {step.label}
+                      </span>
+                      {!step.done && (
+                        <ArrowLeft className="h-4 w-4 mr-auto text-muted-foreground" />
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Schedule Status */}
           <Card className={cn(
