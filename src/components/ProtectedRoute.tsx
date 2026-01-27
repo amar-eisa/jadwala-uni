@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsPendingApproval } from '@/hooks/useSubscription';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -9,8 +10,9 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const { isPending, isLoading: subscriptionLoading } = useIsPendingApproval();
 
-  if (loading) {
+  if (loading || subscriptionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
         <div className="flex flex-col items-center gap-4">
@@ -23,6 +25,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (isPending) {
+    return <Navigate to="/pending-approval" replace />;
   }
 
   return <>{children}</>;

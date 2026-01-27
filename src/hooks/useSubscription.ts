@@ -48,3 +48,13 @@ export function useIsActiveSubscription() {
     subscription
   };
 }
+
+export function useIsPendingApproval() {
+  const { data: subscription, isLoading } = useUserSubscription();
+  
+  return {
+    isPending: subscription?.status === 'pending',
+    isLoading,
+    subscription
+  };
+}
