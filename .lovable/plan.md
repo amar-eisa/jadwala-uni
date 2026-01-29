@@ -1,111 +1,204 @@
 
-# خطة إصلاح صلاحيات الإدارة
+# خطة تعديل نظام توليد الجداول حسب الدفعة
 
-## المشكلة
-قسم الإدارة يظهر ولكن لا تظهر أي بيانات للمستخدمين أو الاشتراكات. السبب هو أن سياسات الأمان (RLS) في قاعدة البيانات معدّة بشكل خاطئ.
-
----
-
-## التشخيص التقني
-
-السياسات الحالية على جداول `profiles` و `subscriptions` و `user_roles` محددة كـ **RESTRICTIVE** بدلاً من **PERMISSIVE**:
-
-**الفرق:**
-- **PERMISSIVE (المطلوب)**: إذا مرت **أي** سياسة = السماح (منطق OR)
-- **RESTRICTIVE (الحالي)**: يجب أن تمر **جميع** السياسات = السماح (منطق AND)
-
-**النتيجة الحالية:**
-عندما يحاول Admin قراءة profiles:
-```text
-سياسة 1: "Admins can view all profiles" → has_role(auth.uid(), 'admin') → TRUE ✓
-سياسة 2: "Users can view own profile" → auth.uid() = id → FALSE ✗
-
-النتيجة (AND): FALSE → لا يمكن الوصول!
-```
+## نظرة عامة
+تعديل نظام توليد الجداول ليكون حسب كل دفعة (مجموعة طلابية) بشكل منفصل، مع إمكانية حفظ عدة جداول، وتحسين تصدير PDF ليشمل هوية المؤسسة.
 
 ---
 
-## الحل المطلوب
+## التغييرات المطلوبة
 
-تغيير جميع سياسات SELECT على الجداول التالية من RESTRICTIVE إلى PERMISSIVE:
+### 1. تعديل قاعدة البيانات
 
-| الجدول | السياسات المتأثرة |
-|--------|------------------|
-| `profiles` | Admins can view all profiles, Users can view own profile |
-| `subscriptions` | Admins can view all subscriptions, Users can view own subscriptions |
-| `user_roles` | Admins can view all roles, Users can view own roles |
+**إضافة عمود `group_id` لجدول schedule_entries:**
 
----
+| الجدول | التغيير |
+|--------|---------|
+| `schedule_entries` | إضافة عمود `group_id` (uuid, nullable) لتحديد المجموعة التي ينتمي لها الجدول |
 
-## التغييرات في قاعدة البيانات
-
-سيتم حذف السياسات القديمة وإنشاء سياسات جديدة كـ PERMISSIVE:
-
-### 1. جدول profiles
 ```sql
--- حذف السياسات القديمة
-DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
-
--- إنشاء سياسات جديدة (PERMISSIVE)
-CREATE POLICY "Admins can view all profiles"
-  ON public.profiles FOR SELECT
-  USING (has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Users can view own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
-```
-
-### 2. جدول subscriptions
-```sql
--- حذف السياسات القديمة
-DROP POLICY IF EXISTS "Admins can view all subscriptions" ON public.subscriptions;
-DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.subscriptions;
-
--- إنشاء سياسات جديدة (PERMISSIVE)
-CREATE POLICY "Admins can view all subscriptions"
-  ON public.subscriptions FOR SELECT
-  USING (has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Users can view own subscriptions"
-  ON public.subscriptions FOR SELECT
-  USING (auth.uid() = user_id);
-```
-
-### 3. جدول user_roles
-```sql
--- حذف السياسات القديمة
-DROP POLICY IF EXISTS "Admins can view all roles" ON public.user_roles;
-DROP POLICY IF EXISTS "Users can view own roles" ON public.user_roles;
-
--- إنشاء سياسات جديدة (PERMISSIVE)
-CREATE POLICY "Admins can view all roles"
-  ON public.user_roles FOR SELECT
-  USING (has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Users can view own roles"
-  ON public.user_roles FOR SELECT
-  USING (auth.uid() = user_id);
+ALTER TABLE public.schedule_entries 
+ADD COLUMN group_id uuid REFERENCES public.student_groups(id) ON DELETE CASCADE;
 ```
 
 ---
 
-## النتيجة المتوقعة بعد التعديل
+### 2. تعديل واجهة المستخدم (TimetablePage.tsx)
+
+**إضافة محدد المجموعة:**
+- قائمة منسدلة لاختيار الدفعة قبل التوليد
+- زر توليد يعمل للدفعة المختارة فقط
+- إمكانية عرض جدول دفعة محددة
 
 ```text
-سياسة 1: "Admins can view all profiles" → TRUE ✓
-سياسة 2: "Users can view own profile" → FALSE (لملفات الآخرين)
+الشكل الجديد:
+┌─────────────────────────────────────────────────┐
+│  [اختر الدفعة: ▼]  [توليد جدول الدفعة]  [مسح]  │
+│  [تصدير PDF]                                    │
+└─────────────────────────────────────────────────┘
+```
 
-النتيجة (OR): TRUE → يمكن الوصول! ✓
+**التغييرات:**
+- state جديد: `selectedGroupId` لتخزين الدفعة المختارة
+- تمرير `group_id` للـ edge function عند التوليد
+- فلترة العرض تلقائياً حسب الدفعة المختارة
+
+---
+
+### 3. تعديل Edge Function (generate-schedule)
+
+**تعديل المنطق:**
+- استقبال `group_id` اختياري في الطلب
+- إذا تم تحديد `group_id`:
+  - توليد الجدول للمواد الخاصة بهذه الدفعة فقط
+  - عدم مسح جداول الدفعات الأخرى
+- حفظ `group_id` في كل entry
+
+```typescript
+const { user_id, group_id } = await req.json();
+
+// Filter subjects by group if specified
+let subjectsQuery = supabase.from('subjects').select('*').eq('user_id', user_id);
+if (group_id) {
+  subjectsQuery = subjectsQuery.eq('group_id', group_id);
+}
+
+// Clear only entries for this group
+if (group_id) {
+  await supabase.from('schedule_entries')
+    .delete()
+    .eq('user_id', user_id)
+    .eq('group_id', group_id);
+} else {
+  await supabase.from('schedule_entries')
+    .delete()
+    .eq('user_id', user_id);
+}
 ```
 
 ---
 
-## الملفات المتأثرة
+### 4. تعديل Hook (useSchedule.ts)
+
+**تعديل `useGenerateSchedule`:**
+```typescript
+export function useGenerateSchedule() {
+  return useMutation({
+    mutationFn: async (groupId?: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase.functions.invoke('generate-schedule', {
+        body: { user_id: user.id, group_id: groupId }
+      });
+      return data;
+    },
+  });
+}
+```
+
+**تعديل `useClearSchedule`:**
+```typescript
+export function useClearSchedule() {
+  return useMutation({
+    mutationFn: async (groupId?: string) => {
+      let query = supabase.from('schedule_entries').delete();
+      if (groupId) {
+        query = query.eq('group_id', groupId);
+      }
+      // ...
+    },
+  });
+}
+```
+
+---
+
+### 5. تحسين تصدير PDF (usePdfExport.ts)
+
+**التصميم الجديد للـ PDF:**
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│            جدول المحاضرات لدفعة: [اسم المجموعة]            │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│                    [جدول المحاضرات]                         │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│           [شعار Connect]  جميع الحقوق محفوظة              │
+│     للتواصل: jadwala.app@gmail.com - +294 128150105        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**التغييرات في ExportOptions:**
+```typescript
+interface ExportOptions {
+  filename?: string;
+  title?: string;
+  groupName?: string;     // اسم الدفعة
+  orientation?: 'portrait' | 'landscape';
+}
+```
+
+**إضافة Footer:**
+```typescript
+// Footer section
+const footerY = pageHeight - 20;
+
+// Add Connect logo
+const connectLogoBase64 = await loadImage('/src/assets/connect-logo.png');
+pdf.addImage(connectLogoBase64, 'PNG', 10, footerY - 8, 15, 15);
+
+// Footer text
+pdf.setFontSize(8);
+pdf.text('جميع الحقوق محفوظة', 30, footerY);
+pdf.text('للتواصل: jadwala.app@gmail.com - +294 128150105', 30, footerY + 5);
+```
+
+---
+
+### 6. تعديل عنوان التصدير
+
+**في TimetablePage.tsx:**
+```typescript
+const handleExportPdf = () => {
+  const selectedGroup = groups?.find(g => g.id === selectedGroupId);
+  const groupName = selectedGroup?.name || 'جميع الدفعات';
+  
+  exportToPdf('timetable-grid', { 
+    filename: `timetable-${groupName}`,
+    title: `جدول المحاضرات لدفعة: ${groupName}`,
+    groupName,
+    orientation: 'landscape'
+  });
+};
+```
+
+---
+
+## ملخص الملفات المتأثرة
 
 | الملف | نوع التغيير |
 |-------|-------------|
-| قاعدة البيانات | تعديل سياسات RLS |
+| قاعدة البيانات | إضافة عمود `group_id` |
+| `supabase/functions/generate-schedule/index.ts` | دعم التوليد حسب الدفعة |
+| `src/hooks/useSchedule.ts` | تمرير `group_id` للتوليد والمسح |
+| `src/hooks/usePdfExport.ts` | إضافة Header وFooter احترافي |
+| `src/pages/TimetablePage.tsx` | إضافة واجهة اختيار الدفعة |
 
-**لا حاجة لتعديل أي ملفات برمجية** - الكود الحالي سيعمل بشكل صحيح بمجرد إصلاح السياسات.
+---
+
+## تفاصيل تقنية
+
+### سير العمل الجديد:
+1. المستخدم يختار الدفعة من القائمة المنسدلة
+2. يضغط "توليد جدول الدفعة"
+3. النظام يولد جدول لهذه الدفعة فقط دون التأثير على جداول الدفعات الأخرى
+4. يمكن للمستخدم تكرار العملية لدفعات أخرى
+5. عند التصدير، يتم تصدير جدول الدفعة المختارة بالتنسيق المطلوب
+
+### تحميل شعار Connect:
+سيتم تحويل الشعار إلى Base64 واستخدامه في PDF لضمان ظهوره بشكل صحيح.
