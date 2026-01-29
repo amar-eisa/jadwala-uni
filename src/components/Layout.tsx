@@ -89,28 +89,43 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       >
         {/* Logo Header */}
-        <div className="flex h-20 items-center justify-between px-6 border-b border-sidebar-border bg-gradient-to-l from-sidebar-accent/50 to-transparent">
-          <div className="flex items-center gap-3">
-            <img 
-              src={jadwalaLogo} 
-              alt="جدولة" 
-              className="h-10 w-auto"
-            />
-            <div>
+        <div className="flex flex-col px-6 py-4 border-b border-sidebar-border bg-gradient-to-l from-sidebar-accent/50 to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img 
+                src={jadwalaLogo} 
+                alt="جدولة" 
+                className="h-10 w-auto"
+              />
               <h1 className="text-lg font-bold text-sidebar-foreground">جدولة</h1>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          {/* شعار الجامعة المخصص */}
+          {(userSettings?.university_name || userSettings?.university_logo_url) && (
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-sidebar-border/50">
+              {userSettings?.university_logo_url && (
+                <img 
+                  src={`${userSettings.university_logo_url}?t=${Date.now()}`}
+                  alt="شعار الجامعة" 
+                  className="h-8 w-8 object-contain rounded"
+                />
+              )}
               {userSettings?.university_name && (
-                <p className="text-xs text-sidebar-foreground/60">{userSettings.university_name}</p>
+                <span className="text-xs text-sidebar-foreground/70">
+                  {userSettings.university_name}
+                </span>
               )}
             </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          )}
         </div>
 
         {/* Navigation */}
