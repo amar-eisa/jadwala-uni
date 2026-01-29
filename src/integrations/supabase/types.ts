@@ -133,6 +133,7 @@ export type Database = {
       schedule_entries: {
         Row: {
           created_at: string
+          group_id: string | null
           id: string
           room_id: string
           subject_id: string
@@ -141,6 +142,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          group_id?: string | null
           id?: string
           room_id: string
           subject_id: string
@@ -149,6 +151,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          group_id?: string | null
           id?: string
           room_id?: string
           subject_id?: string
@@ -156,6 +159,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "schedule_entries_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "student_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "schedule_entries_room_id_fkey"
             columns: ["room_id"]
