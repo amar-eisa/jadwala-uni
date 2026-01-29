@@ -1,170 +1,88 @@
 
-# خطة تحديث الهوية البصرية وإضافة صفحة الإعدادات
+# خطة إصلاح عرض شعار الجامعة في الشاشة الرئيسية
 
-## ملخص المشروع
-تحديث العلامة التجارية للنظام واستبدال الشعارات والنصوص الحالية، مع إضافة صفحة إعدادات تسمح لكل مستخدم بتخصيص بيانات مؤسسته.
+## المشكلة
+شعار الجامعة الذي يرفعه المستخدم من صفحة الإعدادات لا يظهر في أي مكان في الشاشة الرئيسية. حالياً يتم عرض اسم الجامعة فقط، بينما يبقى شعار النظام (`jadwala-logo.png`) ثابتاً.
+
+---
+
+## الحل المقترح
+إضافة عرض شعار الجامعة المخصص في الشريط الجانبي بجانب شعار النظام أو أسفله.
 
 ---
 
 ## التغييرات المطلوبة
 
-### 1. نسخ الشعارات إلى المشروع
+### تعديل ملف `src/components/Layout.tsx`
 
-| الملف المصدر | المسار الهدف |
-|---|---|
-| `user-uploads://Asset_2.png` | `src/assets/jadwala-logo.png` |
-| `user-uploads://logo.png` | `src/assets/connect-logo.png` |
-
----
-
-### 2. تحديث صفحة تسجيل الدخول (`src/pages/AuthPage.tsx`)
-
-**التغييرات:**
-- استبدال أيقونة Calendar بشعار جدولة
-- تغيير العنوان من "نظام إدارة الجداول" إلى "جدولة"
-- إضافة وصف "نظام المحاضرات الذكي"
-- حذف "جامعة المستقبل"
-- إضافة footer يحتوي على شعار Connect ونص "جميع الحقوق محفوظة لـ Connect"
+**التصميم المقترح للشريط الجانبي:**
 
 ```text
 قبل:
-├── أيقونة Calendar
-├── "نظام إدارة الجداول"
-├── "جامعة المستقبل"
-└── "نظام جدولة المحاضرات الأكاديمي - الإصدار 2.0"
+┌─────────────────────────────┐
+│  [شعار جدولة]  جدولة       │
+│              اسم الجامعة    │
+└─────────────────────────────┘
 
 بعد:
-├── شعار جدولة (Asset_2.png)
-├── "جدولة"
-├── "نظام المحاضرات الذكي"
-├── (بدون اسم جامعة)
-└── شعار Connect + "جميع الحقوق محفوظة لـ Connect"
+┌─────────────────────────────┐
+│  [شعار جدولة]  جدولة       │
+│  [شعار الجامعة]  اسم الجامعة│  ← جديد
+└─────────────────────────────┘
 ```
-
----
-
-### 3. تحديث الشريط الجانبي (`src/components/Layout.tsx`)
 
 **التغييرات:**
-- استبدال أيقونة Calendar بشعار جدولة
-- تغيير "نظام الجدولة" إلى "جدولة"
-- عرض اسم الجامعة من إعدادات المستخدم (أو إخفاء السطر إذا لم يُحدد)
-- إضافة رابط "الإعدادات" في قائمة التنقل
+1. إذا كان `userSettings?.university_logo_url` موجوداً، يتم عرض شعار الجامعة
+2. يُعرض الشعار بجانب اسم الجامعة في قسم منفصل أسفل شعار النظام
+3. إضافة تصميم جذاب لقسم الجامعة
 
 ---
 
-### 4. إنشاء جدول قاعدة بيانات لإعدادات المستخدم
+## الكود المقترح
 
-**جدول جديد: `user_settings`**
-
-| العمود | النوع | الوصف |
-|---|---|---|
-| `id` | uuid | المفتاح الرئيسي |
-| `user_id` | uuid | معرف المستخدم (فريد) |
-| `university_name` | text | اسم الجامعة |
-| `university_logo_url` | text | رابط شعار الجامعة |
-| `created_at` | timestamp | تاريخ الإنشاء |
-| `updated_at` | timestamp | تاريخ التحديث |
-
-**سياسات RLS:**
-- المستخدم يمكنه قراءة وتعديل إعداداته فقط
-
----
-
-### 5. إنشاء Storage Bucket للشعارات
-
-**Bucket جديد: `university-logos`**
-- نوع: عام (public)
-- سياسات: المستخدمون يمكنهم رفع وحذف ملفاتهم فقط
-
----
-
-### 6. إنشاء صفحة الإعدادات (`src/pages/SettingsPage.tsx`)
-
-**المميزات:**
-- حقل إدخال اسم الجامعة
-- منطقة رفع شعار الجامعة
-- معاينة الشعار الحالي
-- زر حفظ الإعدادات
-- رسالة نجاح عند الحفظ
-
----
-
-### 7. إنشاء Hook لإدارة الإعدادات (`src/hooks/useUserSettings.ts`)
-
-**الوظائف:**
-- `useUserSettings()`: جلب إعدادات المستخدم الحالي
-- `useUpdateUserSettings()`: تحديث الإعدادات
-- `useUploadUniversityLogo()`: رفع شعار الجامعة
-
----
-
-### 8. تحديث الملفات الأخرى
-
-| الملف | التغيير |
-|---|---|
-| `src/App.tsx` | إضافة route `/settings` |
-| `src/components/Layout.tsx` | إضافة رابط الإعدادات + استخدام بيانات المستخدم الديناميكية |
-| `src/pages/PendingApprovalPage.tsx` | تحديث الشعار والنصوص |
-| `src/hooks/usePdfExport.ts` | إضافة شعار الجامعة للـ PDF المُصدّر |
-
----
-
-## هيكل الملفات الجديدة
-
-```text
-src/
-├── assets/
-│   ├── jadwala-logo.png      (جديد)
-│   └── connect-logo.png      (جديد)
-├── pages/
-│   └── SettingsPage.tsx      (جديد)
-└── hooks/
-    └── useUserSettings.ts    (جديد)
+```tsx
+{/* Logo Header */}
+<div className="...">
+  {/* شعار النظام */}
+  <div className="flex items-center gap-3">
+    <img src={jadwalaLogo} alt="جدولة" className="h-10 w-auto" />
+    <h1 className="text-lg font-bold">جدولة</h1>
+  </div>
+  
+  {/* شعار الجامعة المخصص - جديد */}
+  {(userSettings?.university_name || userSettings?.university_logo_url) && (
+    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-sidebar-border/50">
+      {userSettings?.university_logo_url && (
+        <img 
+          src={userSettings.university_logo_url} 
+          alt="شعار الجامعة" 
+          className="h-8 w-8 object-contain rounded"
+        />
+      )}
+      {userSettings?.university_name && (
+        <span className="text-xs text-sidebar-foreground/70">
+          {userSettings.university_name}
+        </span>
+      )}
+    </div>
+  )}
+</div>
 ```
 
 ---
 
-## تدفق البيانات
+## ملاحظة إضافية
+سيتم أيضاً إضافة cache-busting للصورة لضمان تحديثها فوراً عند الرفع:
 
-```text
-المستخدم يفتح صفحة الإعدادات
-        │
-        ▼
-يدخل اسم الجامعة ويرفع الشعار
-        │
-        ▼
-يُحفظ في جدول user_settings + Storage bucket
-        │
-        ▼
-الـ Hook يجلب البيانات في Layout
-        │
-        ▼
-تُعرض البيانات في الشريط الجانبي + PDF Export
+```tsx
+src={`${userSettings.university_logo_url}?t=${new Date().getTime()}`}
 ```
-
----
-
-## ملاحظات تقنية
-
-1. **شعار جدولة**: سيُستخدم كـ import في React components لضمان التحميل الصحيح
-2. **شعار Connect**: سيُعرض في footer صفحة الدخول فقط
-3. **شعار الجامعة**: يُخزن في Storage ويُعرض من URL
-4. **التخزين المؤقت**: سيُستخدم React Query لتخزين إعدادات المستخدم مؤقتاً
-5. **الصور**: يُفضل صور بصيغة PNG أو WebP بحجم لا يتجاوز 1MB
 
 ---
 
 ## الملفات المتأثرة
 
 | الملف | نوع التغيير |
-|---|---|
-| `src/assets/jadwala-logo.png` | إنشاء (نسخ) |
-| `src/assets/connect-logo.png` | إنشاء (نسخ) |
-| `src/pages/AuthPage.tsx` | تعديل |
-| `src/pages/PendingApprovalPage.tsx` | تعديل |
-| `src/components/Layout.tsx` | تعديل |
-| `src/pages/SettingsPage.tsx` | إنشاء |
-| `src/hooks/useUserSettings.ts` | إنشاء |
-| `src/App.tsx` | تعديل |
-| قاعدة البيانات | إضافة جدول + bucket |
+|-------|-------------|
+| `src/components/Layout.tsx` | تعديل - إضافة عرض شعار الجامعة المخصص |
+
