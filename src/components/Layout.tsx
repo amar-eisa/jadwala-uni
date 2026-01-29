@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   LogOut,
-  Shield
+  Shield,
+  Settings
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,8 @@ import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useAdmin';
+import { useUserSettings } from '@/hooks/useUserSettings';
+import jadwalaLogo from '@/assets/jadwala-logo.png';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
@@ -39,6 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { data: isAdmin } = useIsAdmin();
+  const { data: userSettings } = useUserSettings();
 
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
@@ -56,10 +60,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     schedule: scheduleEntries?.length || 0,
   };
 
-  // Add admin link if user is admin
-  const navItems = isAdmin 
-    ? [...navigation, { name: 'الإدارة', href: '/admin', icon: Shield, countKey: null }]
-    : navigation;
+  // Build nav items dynamically
+  const navItems = [
+    ...navigation,
+    { name: 'الإعدادات', href: '/settings', icon: Settings, countKey: null },
+    ...(isAdmin ? [{ name: 'الإدارة', href: '/admin', icon: Shield, countKey: null }] : []),
+  ];
 
   const handleSignOut = async () => {
     await signOut();
@@ -85,12 +91,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Logo Header */}
         <div className="flex h-20 items-center justify-between px-6 border-b border-sidebar-border bg-gradient-to-l from-sidebar-accent/50 to-transparent">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-              <Calendar className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img 
+              src={jadwalaLogo} 
+              alt="جدولة" 
+              className="h-10 w-auto"
+            />
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">نظام الجدولة</h1>
-              <p className="text-xs text-sidebar-foreground/60">جامعة المستقبل</p>
+              <h1 className="text-lg font-bold text-sidebar-foreground">جدولة</h1>
+              {userSettings?.university_name && (
+                <p className="text-xs text-sidebar-foreground/60">{userSettings.university_name}</p>
+              )}
             </div>
           </div>
           <Button
@@ -188,10 +198,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Calendar className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <h1 className="text-lg font-bold">نظام الجدولة</h1>
+            <img 
+              src={jadwalaLogo} 
+              alt="جدولة" 
+              className="h-8 w-auto"
+            />
+            <h1 className="text-lg font-bold">جدولة</h1>
           </div>
         </header>
 
