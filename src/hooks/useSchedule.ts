@@ -30,12 +30,12 @@ export function useGenerateSchedule() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (groupId?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('يجب تسجيل الدخول');
 
       const { data, error } = await supabase.functions.invoke('generate-schedule', {
-        body: { user_id: user.id }
+        body: { user_id: user.id, group_id: groupId }
       });
       
       if (error) throw error;
@@ -62,12 +62,18 @@ export function useClearSchedule() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
+    mutationFn: async (groupId?: string) => {
+      let query = supabase
         .from('schedule_entries')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+        .delete();
       
+      if (groupId) {
+        query = query.eq('group_id', groupId);
+      } else {
+        query = query.neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      }
+      
+      const { error } = await query;
       if (error) throw error;
     },
     onSuccess: () => {

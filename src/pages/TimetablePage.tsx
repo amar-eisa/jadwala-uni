@@ -23,7 +23,7 @@ import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, AlertCircle, Calendar, BookOpen, DoorOpen, Clock } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, AlertCircle, Calendar, BookOpen, DoorOpen, Clock, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePdfExport } from '@/hooks/usePdfExport';
@@ -141,6 +141,9 @@ export default function TimetablePage() {
   const moveEntry = useMoveScheduleEntry();
   const { exportToPdf, isExporting } = usePdfExport();
 
+  // Group selection for generation
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
+  
   const [filterType, setFilterType] = useState<'all' | 'room' | 'professor' | 'group'>('all');
   const [filterId, setFilterId] = useState<string>('');
   const [activeEntry, setActiveEntry] = useState<ScheduleEntry | null>(null);
@@ -183,17 +186,29 @@ export default function TimetablePage() {
       .sort((a, b) => a.start_time.localeCompare(b.start_time));
   }, [timeSlots]);
 
+  // Filter entries based on selected group for generation AND filter type
   const filteredEntries = useMemo(() => {
     if (!scheduleEntries) return [];
-    if (filterType === 'all' || !filterId) return scheduleEntries;
     
-    return scheduleEntries.filter((entry) => {
-      if (filterType === 'room') return entry.room_id === filterId;
-      if (filterType === 'professor') return entry.subject?.professor_id === filterId;
-      if (filterType === 'group') return entry.subject?.group_id === filterId;
-      return true;
-    });
-  }, [scheduleEntries, filterType, filterId]);
+    let entries = scheduleEntries;
+    
+    // Filter by selected group for display (when a specific group is selected)
+    if (selectedGroupId && selectedGroupId !== 'all') {
+      entries = entries.filter((entry) => entry.subject?.group_id === selectedGroupId);
+    }
+    
+    // Apply additional filters
+    if (filterType !== 'all' && filterId) {
+      entries = entries.filter((entry) => {
+        if (filterType === 'room') return entry.room_id === filterId;
+        if (filterType === 'professor') return entry.subject?.professor_id === filterId;
+        if (filterType === 'group') return entry.subject?.group_id === filterId;
+        return true;
+      });
+    }
+    
+    return entries;
+  }, [scheduleEntries, selectedGroupId, filterType, filterId]);
 
   const getEntriesForSlot = (day: DayOfWeek, startTime: string, endTime: string): ScheduleEntry[] => {
     return filteredEntries.filter((entry) => {
@@ -275,8 +290,55 @@ export default function TimetablePage() {
     setRoomSelectDialog(null);
   };
 
+  const handleGenerateSchedule = async () => {
+    const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
+    await generateSchedule.mutateAsync(groupId);
+  };
+
+  const handleClearSchedule = async () => {
+    const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
+    const groupName = selectedGroupId === 'all' 
+      ? 'جميع الجداول' 
+      : groups?.find(g => g.id === selectedGroupId)?.name || 'الجدول';
+    
+    if (confirm(`هل تريد مسح ${groupName}؟`)) {
+      await clearSchedule.mutateAsync(groupId);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    const groupName = selectedGroupId === 'all' 
+      ? undefined 
+      : groups?.find(g => g.id === selectedGroupId)?.name;
+    
+    const filename = groupName 
+      ? `جدول-${groupName}` 
+      : 'الجدول-الدراسي';
+    
+    await exportToPdf('timetable-grid', { 
+      filename,
+      groupName,
+      orientation: 'landscape'
+    });
+  };
+
   const formatTime = (time: string) => time.slice(0, 5);
-  const canGenerate = rooms?.length && subjects?.length && timeSlots?.length;
+  
+  // Check if the selected group has subjects
+  const selectedGroupHasSubjects = useMemo(() => {
+    if (selectedGroupId === 'all') {
+      return subjects && subjects.length > 0;
+    }
+    return subjects?.some(s => s.group_id === selectedGroupId);
+  }, [subjects, selectedGroupId]);
+  
+  const canGenerate = rooms?.length && selectedGroupHasSubjects && timeSlots?.length;
+
+  // Get selected group name for display
+  const selectedGroupName = useMemo(() => {
+    if (selectedGroupId === 'all') return 'جميع الدفعات';
+    return groups?.find(g => g.id === selectedGroupId)?.name || '';
+  }, [selectedGroupId, groups]);
 
   return (
     <Layout>
@@ -290,36 +352,96 @@ export default function TimetablePage() {
             <h1 className="text-3xl font-bold">الجدول الأسبوعي</h1>
             <p className="text-muted-foreground mt-1">اسحب المحاضرات لتعديل مواعيدها</p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" onClick={() => exportToPdf('timetable-grid', { filename: 'timetable', title: 'الجدول', orientation: 'landscape' })} disabled={isExporting || !scheduleEntries?.length} className="gap-2">
-              <FileDown className="h-4 w-4" />
-              تصدير PDF
-            </Button>
-            <Button variant="outline" onClick={() => confirm('مسح الجدول؟') && clearSchedule.mutateAsync()} disabled={clearSchedule.isPending || !scheduleEntries?.length || !isActiveSubscription} className="gap-2">
-              <Trash2 className="h-4 w-4" />
-              مسح
-            </Button>
-            <Button onClick={() => generateSchedule.mutateAsync()} disabled={generateSchedule.isPending || !canGenerate || !isActiveSubscription} className="gap-2 shadow-lg shadow-primary/25">
-              <Wand2 className="h-4 w-4" />
-              {generateSchedule.isPending ? 'جاري...' : 'توليد'}
-            </Button>
-          </div>
         </div>
+
+        {/* Group Selection and Actions */}
+        <Card className="border-0 shadow-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              توليد جدول الدفعة
+            </CardTitle>
+            <CardDescription>
+              اختر الدفعة ثم اضغط توليد لإنشاء جدول منفصل لها
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              {/* Group Selector */}
+              <div className="flex-1 w-full sm:max-w-[300px]">
+                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="اختر الدفعة..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="all">جميع الدفعات</SelectItem>
+                    {groups?.map(g => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportPdf} 
+                  disabled={isExporting || !filteredEntries?.length} 
+                  className="gap-2"
+                >
+                  <FileDown className="h-4 w-4" />
+                  تصدير PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleClearSchedule} 
+                  disabled={clearSchedule.isPending || !filteredEntries?.length || !isActiveSubscription} 
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  مسح {selectedGroupId !== 'all' ? 'جدول الدفعة' : 'الكل'}
+                </Button>
+                <Button 
+                  onClick={handleGenerateSchedule} 
+                  disabled={generateSchedule.isPending || !canGenerate || !isActiveSubscription} 
+                  className="gap-2 shadow-lg shadow-primary/25"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  {generateSchedule.isPending ? 'جاري...' : `توليد ${selectedGroupId !== 'all' ? 'جدول الدفعة' : 'الكل'}`}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Selected Group Info */}
+            {selectedGroupId !== 'all' && (
+              <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">الدفعة المختارة:</span> {selectedGroupName}
+                  {' • '}
+                  <span className="font-medium text-foreground">المواد:</span> {subjects?.filter(s => s.group_id === selectedGroupId).length || 0} مادة
+                  {' • '}
+                  <span className="font-medium text-foreground">المحاضرات المجدولة:</span> {filteredEntries.length} محاضرة
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <Card className="border-0 shadow-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Filter className="h-4 w-4 text-primary" />
-              تصفية العرض
+              تصفية إضافية
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
               <Select value={filterType} onValueChange={(v: any) => { setFilterType(v); setFilterId(''); }}>
                 <SelectTrigger className="w-full sm:w-[200px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">عرض الكل</SelectItem>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  <SelectItem value="all">بدون تصفية إضافية</SelectItem>
                   <SelectItem value="room">حسب القاعة</SelectItem>
                   <SelectItem value="professor">حسب الدكتور</SelectItem>
                   <SelectItem value="group">حسب المجموعة</SelectItem>
@@ -328,7 +450,7 @@ export default function TimetablePage() {
               {filterType !== 'all' && (
                 <Select value={filterId} onValueChange={setFilterId}>
                   <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="اختر..." /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border shadow-lg z-50">
                     {filterType === 'room' && rooms?.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
                     {filterType === 'professor' && professors?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     {filterType === 'group' && groups?.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
@@ -348,7 +470,14 @@ export default function TimetablePage() {
               <div className="empty-state py-12"><Clock className="h-10 w-10 mb-4" /><p>لا توجد فترات زمنية</p></div>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                <div id="timetable-grid" className="min-w-[900px] p-4">
+                <div id="timetable-grid" className="min-w-[900px] p-4 bg-white">
+                  {/* Header row with group name for PDF */}
+                  {selectedGroupId !== 'all' && (
+                    <div className="text-center mb-4 pb-2 border-b">
+                      <h2 className="text-xl font-bold text-foreground">جدول محاضرات دفعة: {selectedGroupName}</h2>
+                    </div>
+                  )}
+                  
                   <div className="grid gap-2 mb-2" style={{ gridTemplateColumns: '90px repeat(6, 1fr)' }}>
                     <div className="p-3 bg-primary text-primary-foreground rounded-xl font-bold text-center text-sm">الفترة</div>
                     {DAYS_ORDER.map((day) => (
@@ -394,39 +523,26 @@ export default function TimetablePage() {
           </CardContent>
         </Card>
 
-        {/* Stats */}
-        {scheduleEntries && scheduleEntries.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { icon: Calendar, label: 'محاضرة مجدولة', value: scheduleEntries.length, color: 'bg-primary/10 text-primary' },
-              { icon: BookOpen, label: 'إجمالي المواد', value: subjects?.length || 0, color: 'bg-warning/10 text-warning' },
-              { icon: DoorOpen, label: 'قاعات مستخدمة', value: rooms?.length || 0, color: 'bg-info/10 text-info' },
-              { icon: Clock, label: 'فترات زمنية', value: uniqueTimeSlots.length, color: 'bg-success/10 text-success' },
-            ].map((stat) => (
-              <Card key={stat.label} className="border-0 shadow-card">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className={cn("p-3 rounded-xl", stat.color)}><stat.icon className="h-5 w-5" /></div>
-                  <div><p className="text-2xl font-bold">{stat.value}</p><p className="text-xs text-muted-foreground">{stat.label}</p></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        {/* Room Selection Dialog */}
+        <Dialog open={roomSelectDialog?.open || false} onOpenChange={(open) => !open && setRoomSelectDialog(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>اختر القاعة</DialogTitle>
+              <DialogDescription>
+                {roomSelectDialog?.subjectType === 'practical' ? 'اختر المعمل المناسب' : 'اختر قاعة المحاضرات'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-2 py-4">
+              {roomSelectDialog?.availableRooms.map((room) => (
+                <Button key={room.id} variant="outline" onClick={() => handleRoomSelect(room.id)} className="justify-start gap-2">
+                  <DoorOpen className="h-4 w-4" />
+                  {room.name}
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      <Dialog open={roomSelectDialog?.open || false} onOpenChange={(open) => !open && setRoomSelectDialog(null)}>
-        <DialogContent dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-warning" />اختر القاعة</DialogTitle>
-            <DialogDescription>اختر القاعة المناسبة:</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-2 py-4">
-            {roomSelectDialog?.availableRooms.map((room) => (
-              <Button key={room.id} variant="outline" className="justify-start" onClick={() => handleRoomSelect(room.id)}>{room.name}</Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 }

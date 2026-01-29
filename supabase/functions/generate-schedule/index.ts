@@ -45,6 +45,7 @@ interface ScheduleEntry {
   time_slot_id: string;
   subject_id: string;
   user_id: string;
+  group_id: string;
 }
 
 serve(async (req) => {
@@ -57,19 +58,25 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user_id from request body
-    const { user_id } = await req.json();
+    // Get user_id and optional group_id from request body
+    const { user_id, group_id } = await req.json();
     if (!user_id) {
       throw new Error('user_id is required');
     }
 
-    console.log(`Generating schedule for user: ${user_id}`);
+    console.log(`Generating schedule for user: ${user_id}${group_id ? `, group: ${group_id}` : ' (all groups)'}`);
 
     // Fetch all required data for this user
+    // Build subjects query - filter by group_id if specified
+    let subjectsQuery = supabase.from('subjects').select('*').eq('user_id', user_id);
+    if (group_id) {
+      subjectsQuery = subjectsQuery.eq('group_id', group_id);
+    }
+
     const [roomsRes, timeSlotsRes, subjectsRes, unavailabilityRes] = await Promise.all([
       supabase.from('rooms').select('*').eq('user_id', user_id),
       supabase.from('time_slots').select('*').eq('user_id', user_id),
-      supabase.from('subjects').select('*').eq('user_id', user_id),
+      subjectsQuery,
       supabase.from('professor_unavailability').select('*').eq('user_id', user_id),
     ]);
 
@@ -85,6 +92,9 @@ serve(async (req) => {
 
     console.log(`Starting schedule generation: ${subjects.length} subjects, ${timeSlots.length} time slots, ${rooms.length} rooms`);
     console.log(`Professor unavailability entries: ${unavailabilities.length}`);
+    if (group_id) {
+      console.log(`Generating for specific group: ${group_id}`);
+    }
 
     // Build professor unavailability lookup
     const professorUnavailabilityMap: Record<string, ProfessorUnavailability[]> = {};
@@ -126,8 +136,12 @@ serve(async (req) => {
       return true;
     }
 
-    // Clear existing schedule for this user
-    await supabase.from('schedule_entries').delete().eq('user_id', user_id);
+    // Clear existing schedule for this user (and group if specified)
+    let deleteQuery = supabase.from('schedule_entries').delete().eq('user_id', user_id);
+    if (group_id) {
+      deleteQuery = deleteQuery.eq('group_id', group_id);
+    }
+    await deleteQuery;
 
     // Track usage for load balancing
     const roomUsage: Record<string, number> = {};
@@ -250,12 +264,13 @@ serve(async (req) => {
               const roomKey = `${room.id}-${timeSlot.id}`;
               if (occupiedRoomSlots.has(roomKey)) continue;
               
-              // Schedule the class with user_id
+              // Schedule the class with user_id and group_id
               scheduleEntries.push({
                 room_id: room.id,
                 time_slot_id: timeSlot.id,
                 subject_id: subject.id,
                 user_id: user_id,
+                group_id: subject.group_id,
               });
               
               occupiedRoomSlots.add(roomKey);
