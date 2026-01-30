@@ -130,12 +130,48 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_schedules: {
+        Row: {
+          created_at: string
+          group_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_schedules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "student_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedule_entries: {
         Row: {
           created_at: string
           group_id: string | null
           id: string
           room_id: string
+          schedule_id: string | null
           subject_id: string
           time_slot_id: string
           user_id: string | null
@@ -145,6 +181,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           room_id: string
+          schedule_id?: string | null
           subject_id: string
           time_slot_id: string
           user_id?: string | null
@@ -154,6 +191,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           room_id?: string
+          schedule_id?: string | null
           subject_id?: string
           time_slot_id?: string
           user_id?: string | null
@@ -171,6 +209,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_entries_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "saved_schedules"
             referencedColumns: ["id"]
           },
           {

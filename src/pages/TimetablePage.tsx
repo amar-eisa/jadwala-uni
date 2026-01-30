@@ -17,13 +17,14 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useScheduleEntries, useGenerateSchedule, useClearSchedule, useMoveScheduleEntry } from '@/hooks/useSchedule';
+import { useSavedSchedules, useSaveSchedule, useActivateSchedule, useDeleteSavedSchedule } from '@/hooks/useSavedSchedules';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useRooms } from '@/hooks/useRooms';
 import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, AlertCircle, Calendar, BookOpen, DoorOpen, Clock, Users } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePdfExport } from '@/hooks/usePdfExport';
@@ -41,6 +42,9 @@ import {
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
+import { SaveScheduleDialog } from '@/components/SaveScheduleDialog';
+import { SavedSchedulesMenu } from '@/components/SavedSchedulesMenu';
+import { DoorOpen } from 'lucide-react';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
@@ -140,9 +144,16 @@ export default function TimetablePage() {
   const clearSchedule = useClearSchedule();
   const moveEntry = useMoveScheduleEntry();
   const { exportToPdf, isExporting } = usePdfExport();
+  
+  // Saved schedules hooks
+  const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
+  const saveSchedule = useSaveSchedule();
+  const activateSchedule = useActivateSchedule();
+  const deleteSavedSchedule = useDeleteSavedSchedule();
 
   // Group selection for generation
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   
   const [filterType, setFilterType] = useState<'all' | 'room' | 'professor' | 'group'>('all');
   const [filterId, setFilterId] = useState<string>('');
@@ -384,6 +395,25 @@ export default function TimetablePage() {
               
               {/* Action Buttons */}
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Saved Schedules Menu */}
+                <SavedSchedulesMenu
+                  schedules={savedSchedules || []}
+                  isLoading={isLoadingSaved}
+                  onActivate={(id) => activateSchedule.mutate(id)}
+                  onDelete={(id) => deleteSavedSchedule.mutate(id)}
+                  disabled={!isActiveSubscription}
+                />
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSaveDialogOpen(true)} 
+                  disabled={!filteredEntries?.length || !isActiveSubscription} 
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  <span className="hidden sm:inline">حفظ الجدول</span>
+                </Button>
+                
                 <Button 
                   variant="outline" 
                   onClick={handleExportPdf} 
@@ -391,7 +421,7 @@ export default function TimetablePage() {
                   className="gap-2"
                 >
                   <FileDown className="h-4 w-4" />
-                  تصدير PDF
+                  <span className="hidden sm:inline">تصدير PDF</span>
                 </Button>
                 <Button 
                   variant="outline" 
@@ -400,7 +430,7 @@ export default function TimetablePage() {
                   className="gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  مسح {selectedGroupId !== 'all' ? 'جدول الدفعة' : 'الكل'}
+                  <span className="hidden sm:inline">مسح {selectedGroupId !== 'all' ? 'جدول الدفعة' : 'الكل'}</span>
                 </Button>
                 <Button 
                   onClick={handleGenerateSchedule} 
@@ -542,6 +572,20 @@ export default function TimetablePage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Save Schedule Dialog */}
+        <SaveScheduleDialog
+          open={saveDialogOpen}
+          onOpenChange={setSaveDialogOpen}
+          onSave={(name) => {
+            const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
+            saveSchedule.mutate({ name, groupId }, {
+              onSuccess: () => setSaveDialogOpen(false),
+            });
+          }}
+          isPending={saveSchedule.isPending}
+          groupName={selectedGroupId !== 'all' ? selectedGroupName : undefined}
+        />
       </div>
     </Layout>
   );
