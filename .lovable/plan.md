@@ -1,204 +1,100 @@
 
-# خطة تعديل نظام توليد الجداول حسب الدفعة
+# خطة إصلاح وتفعيل نظام الصلاحيات
 
-## نظرة عامة
-تعديل نظام توليد الجداول ليكون حسب كل دفعة (مجموعة طلابية) بشكل منفصل، مع إمكانية حفظ عدة جداول، وتحسين تصدير PDF ليشمل هوية المؤسسة.
+## الحالة الحالية
+
+بعد مراجعة النظام، تبين أن هناك مشكلة رئيسية واحدة تحتاج إلى إصلاح:
+
+**المشكلة:** الـ Triggers غير مرتبطة بجدول auth.users
+
+الدوال (Functions) موجودة وجاهزة:
+- `handle_new_user` - إنشاء الملف الشخصي
+- `handle_new_user_role` - تعيين دور المستخدم
+- `handle_new_user_subscription` - إنشاء اشتراك بحالة "في الانتظار"
+
+لكن هذه الدوال لا تُستدعى تلقائياً لأن الـ Triggers غير مفعّلة.
 
 ---
 
 ## التغييرات المطلوبة
 
-### 1. تعديل قاعدة البيانات
+### 1. تفعيل Triggers على auth.users
 
-**إضافة عمود `group_id` لجدول schedule_entries:**
+سيتم إنشاء/إعادة إنشاء الـ Triggers التالية:
 
-| الجدول | التغيير |
-|--------|---------|
-| `schedule_entries` | إضافة عمود `group_id` (uuid, nullable) لتحديد المجموعة التي ينتمي لها الجدول |
+| Trigger | الوظيفة | الدالة المستدعاة |
+|---------|---------|------------------|
+| `on_auth_user_created` | إنشاء ملف شخصي للمستخدم الجديد | `handle_new_user()` |
+| `on_auth_user_created_role` | تعيين دور 'user' تلقائياً | `handle_new_user_role()` |
+| `on_auth_user_created_subscription` | إنشاء اشتراك بحالة 'pending' | `handle_new_user_subscription()` |
 
 ```sql
-ALTER TABLE public.schedule_entries 
-ADD COLUMN group_id uuid REFERENCES public.student_groups(id) ON DELETE CASCADE;
+-- إنشاء trigger للملف الشخصي
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- إنشاء trigger للدور
+CREATE TRIGGER on_auth_user_created_role
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_role();
+
+-- إنشاء trigger للاشتراك
+CREATE TRIGGER on_auth_user_created_subscription
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_subscription();
 ```
 
 ---
 
-### 2. تعديل واجهة المستخدم (TimetablePage.tsx)
+## ما هو موجود وصحيح (لا يحتاج تعديل)
 
-**إضافة محدد المجموعة:**
-- قائمة منسدلة لاختيار الدفعة قبل التوليد
-- زر توليد يعمل للدفعة المختارة فقط
-- إمكانية عرض جدول دفعة محددة
+### واجهة الإدارة
+- صفحة `/admin` محمية ومتاحة للمديرين فقط
+- تبويب "في الانتظار" يعرض الحسابات الجديدة
+- أزرار "اعتماد" و"رفض" تعمل بشكل صحيح
 
-```text
-الشكل الجديد:
-┌─────────────────────────────────────────────────┐
-│  [اختر الدفعة: ▼]  [توليد جدول الدفعة]  [مسح]  │
-│  [تصدير PDF]                                    │
-└─────────────────────────────────────────────────┘
-```
+### صلاحيات المدير
+- عرض جميع المستخدمين
+- تغيير دور المستخدم (مستخدم ↔ مدير)
+- تعديل حالة الاشتراك
+- تحديد تاريخ بداية ونهاية الاشتراك
+- حذف المستخدمين
 
-**التغييرات:**
-- state جديد: `selectedGroupId` لتخزين الدفعة المختارة
-- تمرير `group_id` للـ edge function عند التوليد
-- فلترة العرض تلقائياً حسب الدفعة المختارة
-
----
-
-### 3. تعديل Edge Function (generate-schedule)
-
-**تعديل المنطق:**
-- استقبال `group_id` اختياري في الطلب
-- إذا تم تحديد `group_id`:
-  - توليد الجدول للمواد الخاصة بهذه الدفعة فقط
-  - عدم مسح جداول الدفعات الأخرى
-- حفظ `group_id` في كل entry
-
-```typescript
-const { user_id, group_id } = await req.json();
-
-// Filter subjects by group if specified
-let subjectsQuery = supabase.from('subjects').select('*').eq('user_id', user_id);
-if (group_id) {
-  subjectsQuery = subjectsQuery.eq('group_id', group_id);
-}
-
-// Clear only entries for this group
-if (group_id) {
-  await supabase.from('schedule_entries')
-    .delete()
-    .eq('user_id', user_id)
-    .eq('group_id', group_id);
-} else {
-  await supabase.from('schedule_entries')
-    .delete()
-    .eq('user_id', user_id);
-}
-```
-
----
-
-### 4. تعديل Hook (useSchedule.ts)
-
-**تعديل `useGenerateSchedule`:**
-```typescript
-export function useGenerateSchedule() {
-  return useMutation({
-    mutationFn: async (groupId?: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase.functions.invoke('generate-schedule', {
-        body: { user_id: user.id, group_id: groupId }
-      });
-      return data;
-    },
-  });
-}
-```
-
-**تعديل `useClearSchedule`:**
-```typescript
-export function useClearSchedule() {
-  return useMutation({
-    mutationFn: async (groupId?: string) => {
-      let query = supabase.from('schedule_entries').delete();
-      if (groupId) {
-        query = query.eq('group_id', groupId);
-      }
-      // ...
-    },
-  });
-}
-```
-
----
-
-### 5. تحسين تصدير PDF (usePdfExport.ts)
-
-**التصميم الجديد للـ PDF:**
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│            جدول المحاضرات لدفعة: [اسم المجموعة]            │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│                    [جدول المحاضرات]                         │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│           [شعار Connect]  جميع الحقوق محفوظة              │
-│     للتواصل: jadwala.app@gmail.com - +294 128150105        │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**التغييرات في ExportOptions:**
-```typescript
-interface ExportOptions {
-  filename?: string;
-  title?: string;
-  groupName?: string;     // اسم الدفعة
-  orientation?: 'portrait' | 'landscape';
-}
-```
-
-**إضافة Footer:**
-```typescript
-// Footer section
-const footerY = pageHeight - 20;
-
-// Add Connect logo
-const connectLogoBase64 = await loadImage('/src/assets/connect-logo.png');
-pdf.addImage(connectLogoBase64, 'PNG', 10, footerY - 8, 15, 15);
-
-// Footer text
-pdf.setFontSize(8);
-pdf.text('جميع الحقوق محفوظة', 30, footerY);
-pdf.text('للتواصل: jadwala.app@gmail.com - +294 128150105', 30, footerY + 5);
-```
-
----
-
-### 6. تعديل عنوان التصدير
-
-**في TimetablePage.tsx:**
-```typescript
-const handleExportPdf = () => {
-  const selectedGroup = groups?.find(g => g.id === selectedGroupId);
-  const groupName = selectedGroup?.name || 'جميع الدفعات';
-  
-  exportToPdf('timetable-grid', { 
-    filename: `timetable-${groupName}`,
-    title: `جدول المحاضرات لدفعة: ${groupName}`,
-    groupName,
-    orientation: 'landscape'
-  });
-};
-```
+### تدفق إنشاء الحساب
+- المستخدم ينشئ حساب جديد
+- يظهر رسالة "حسابك في انتظار موافقة المدير"
+- يتم توجيهه لصفحة `/pending-approval`
+- المدير يرى الحساب في لوحة الإدارة
+- المدير يوافق أو يرفض الحساب
 
 ---
 
 ## ملخص الملفات المتأثرة
 
-| الملف | نوع التغيير |
-|-------|-------------|
-| قاعدة البيانات | إضافة عمود `group_id` |
-| `supabase/functions/generate-schedule/index.ts` | دعم التوليد حسب الدفعة |
-| `src/hooks/useSchedule.ts` | تمرير `group_id` للتوليد والمسح |
-| `src/hooks/usePdfExport.ts` | إضافة Header وFooter احترافي |
-| `src/pages/TimetablePage.tsx` | إضافة واجهة اختيار الدفعة |
+| الملف/المكون | نوع التغيير |
+|--------------|-------------|
+| قاعدة البيانات | إنشاء 3 Triggers |
+
+**لا حاجة لتعديل أي ملفات برمجية** - الكود الحالي سيعمل بشكل صحيح بمجرد تفعيل الـ Triggers.
 
 ---
 
-## تفاصيل تقنية
+## النتيجة المتوقعة
 
-### سير العمل الجديد:
-1. المستخدم يختار الدفعة من القائمة المنسدلة
-2. يضغط "توليد جدول الدفعة"
-3. النظام يولد جدول لهذه الدفعة فقط دون التأثير على جداول الدفعات الأخرى
-4. يمكن للمستخدم تكرار العملية لدفعات أخرى
-5. عند التصدير، يتم تصدير جدول الدفعة المختارة بالتنسيق المطلوب
+بعد تفعيل الـ Triggers:
 
-### تحميل شعار Connect:
-سيتم تحويل الشعار إلى Base64 واستخدامه في PDF لضمان ظهوره بشكل صحيح.
+1. **عند إنشاء حساب جديد:**
+   - يتم إنشاء profile تلقائياً
+   - يتم تعيين role = 'user' تلقائياً
+   - يتم إنشاء subscription بحالة 'pending' تلقائياً
+
+2. **المستخدم الجديد:**
+   - يرى رسالة "في انتظار الموافقة"
+   - لا يمكنه الوصول للنظام حتى يوافق المدير
+
+3. **المدير:**
+   - يرى الحسابات الجديدة في تبويب "في الانتظار"
+   - يمكنه الموافقة مع تحديد تاريخ انتهاء الاشتراك
+   - يمكنه رفض الحساب وحذف البيانات
+   - يمكنه تغيير أي مستخدم إلى مدير
