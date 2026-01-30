@@ -84,7 +84,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-72 bg-sidebar text-sidebar-foreground border-l border-sidebar-border shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+          "fixed inset-y-0 right-0 z-50 w-72 bg-sidebar text-sidebar-foreground border-l border-sidebar-border shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col",
           sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
       >
@@ -129,7 +129,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-1 p-4">
+        <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href;
             const count = item.countKey ? counts[item.countKey] : null;
@@ -173,7 +173,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* User Info & Sign Out */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">
+        <div className="mt-auto p-4 border-t border-sidebar-border shrink-0">
           {user && (
             <div className="bg-sidebar-accent rounded-xl p-4 space-y-3">
               <div className="text-center">
