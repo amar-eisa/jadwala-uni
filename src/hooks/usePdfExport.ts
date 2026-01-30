@@ -1,29 +1,13 @@
 import { useCallback, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import connectLogo from '@/assets/connect-logo.png';
 
 interface ExportOptions {
   filename?: string;
   title?: string;
   groupName?: string;
   orientation?: 'portrait' | 'landscape';
-}
-
-// Connect logo as base64 - will be loaded dynamically
-async function loadConnectLogoBase64(): Promise<string> {
-  try {
-    const response = await fetch('/src/assets/connect-logo.png');
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error('Failed to load Connect logo:', error);
-    return '';
-  }
 }
 
 export function usePdfExport() {
@@ -39,11 +23,6 @@ export function usePdfExport() {
       orientation = 'landscape'
     } = options;
 
-    // Generate title based on group name
-    const title = groupName 
-      ? `جدول المحاضرات لدفعة: ${groupName}`
-      : 'الجداول الدراسية';
-
     setIsExporting(true);
 
     try {
@@ -52,18 +31,103 @@ export function usePdfExport() {
         throw new Error('Element not found');
       }
 
-      // Create canvas from the element
-      const canvas = await html2canvas(element, {
+      // Format date in Arabic
+      const date = new Date().toLocaleDateString('ar-SA', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long',
+      });
+
+      // Generate title based on group name
+      const title = groupName 
+        ? `جدول المحاضرات لدفعة: ${groupName}`
+        : 'الجداول الدراسية';
+
+      // Create wrapper element with all content
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = `
+        width: 1123px;
+        background: white;
+        padding: 30px;
+        direction: rtl;
+        font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+        position: absolute;
+        left: -9999px;
+        top: 0;
+      `;
+
+      // Create header
+      const header = document.createElement('div');
+      header.style.cssText = `
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e5e7eb;
+      `;
+      header.innerHTML = `
+        <h1 style="font-size: 28px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">
+          ${title}
+        </h1>
+        <p style="font-size: 14px; color: #6b7280; margin: 0;">
+          ${date}
+        </p>
+      `;
+
+      // Clone the table element
+      const tableClone = element.cloneNode(true) as HTMLElement;
+      tableClone.style.cssText = `
+        width: 100%;
+        margin: 0;
+      `;
+
+      // Create footer
+      const footer = document.createElement('div');
+      footer.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 25px;
+        padding-top: 15px;
+        border-top: 1px solid #e5e7eb;
+        direction: rtl;
+      `;
+      footer.innerHTML = `
+        <img src="${connectLogo}" width="50" height="40" style="object-fit: contain;" />
+        <div style="flex: 1;">
+          <p style="margin: 0; font-size: 13px; color: #374151; font-weight: 500;">
+            جميع الحقوق محفوظة
+          </p>
+          <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280;">
+            للتواصل: amareisa.info@gmail.com - +294 128150105
+          </p>
+        </div>
+      `;
+
+      // Assemble wrapper
+      wrapper.appendChild(header);
+      wrapper.appendChild(tableClone);
+      wrapper.appendChild(footer);
+
+      // Add to document temporarily
+      document.body.appendChild(wrapper);
+
+      // Convert to canvas
+      const canvas = await html2canvas(wrapper, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        allowTaint: true,
       });
 
+      // Remove wrapper from document
+      document.body.removeChild(wrapper);
+
       // A4 dimensions in mm
-      const imgWidth = orientation === 'landscape' ? 297 : 210;
-      const pageHeight = orientation === 'landscape' ? 210 : 297;
-      
+      const pdfWidth = orientation === 'landscape' ? 297 : 210;
+      const pdfHeight = orientation === 'landscape' ? 210 : 297;
+
       // Create PDF
       const pdf = new jsPDF({
         orientation,
@@ -71,75 +135,27 @@ export function usePdfExport() {
         format: 'a4',
       });
 
-      // Header section
-      const headerY = 15;
-      
-      // Add title (centered)
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(18);
-      const titleWidth = pdf.getTextWidth(title);
-      pdf.text(title, (imgWidth - titleWidth) / 2, headerY);
+      // Calculate image dimensions to fit A4
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      // Add date
-      const date = new Date().toLocaleDateString('ar-SA', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      const dateWidth = pdf.getTextWidth(date);
-      pdf.text(date, (imgWidth - dateWidth) / 2, headerY + 8);
-
-      // Calculate image dimensions
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const startY = 30;
-      const footerHeight = 25;
-      const availableHeight = pageHeight - startY - footerHeight;
+      // If image is taller than page, scale it down
+      let finalWidth = imgWidth;
+      let finalHeight = imgHeight;
       
-      // Scale image to fit
-      let finalImgHeight = imgHeight;
-      let finalImgWidth = imgWidth - 20; // 10mm margin on each side
-      
-      if (finalImgHeight > availableHeight) {
-        const scale = availableHeight / finalImgHeight;
-        finalImgHeight = availableHeight;
-        finalImgWidth = finalImgWidth * scale;
+      if (imgHeight > pdfHeight) {
+        const scale = pdfHeight / imgHeight;
+        finalHeight = pdfHeight;
+        finalWidth = imgWidth * scale;
       }
 
-      // Add the timetable image (centered)
+      // Center the image on the page
+      const xOffset = (pdfWidth - finalWidth) / 2;
+      const yOffset = (pdfHeight - finalHeight) / 2;
+
+      // Add the image to PDF
       const imgData = canvas.toDataURL('image/png');
-      const xOffset = (imgWidth - finalImgWidth) / 2;
-      pdf.addImage(imgData, 'PNG', xOffset, startY, finalImgWidth, finalImgHeight);
-
-      // Footer section
-      const footerY = pageHeight - 15;
-      
-      // Try to load Connect logo
-      try {
-        const logoBase64 = await loadConnectLogoBase64();
-        if (logoBase64) {
-          pdf.addImage(logoBase64, 'PNG', 10, footerY - 10, 15, 12);
-        }
-      } catch (e) {
-        console.log('Could not add logo to PDF');
-      }
-
-      // Footer text (right-aligned for Arabic)
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'normal');
-      
-      const footerText1 = 'جميع الحقوق محفوظة';
-      const footerText2 = 'للتواصل: jadwala.app@gmail.com - +294 128150105';
-      
-      // Draw footer text (positioned to the right of the logo)
-      pdf.text(footerText1, 30, footerY - 5);
-      pdf.text(footerText2, 30, footerY + 1);
-
-      // Add a subtle line above footer
-      pdf.setDrawColor(200, 200, 200);
-      pdf.setLineWidth(0.3);
-      pdf.line(10, footerY - 15, imgWidth - 10, footerY - 15);
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
 
       // Save the PDF
       pdf.save(`${filename}.pdf`);
