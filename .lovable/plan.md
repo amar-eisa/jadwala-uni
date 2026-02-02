@@ -1,56 +1,90 @@
 
+# خطة إصلاح عرض الجدول المحفوظ عند تفعيله
 
-# خطة إضافة شعار الجامعة المخصص في ترويسة PDF
+## المشكلة
 
-## الهدف
+عند الضغط على جدول محفوظ من القائمة المنسدلة، يتم تحديث علامة `is_active` فقط، لكن **لا يتغير الجدول المعروض** لأن:
 
-إضافة شعار الجامعة الذي رفعه المستخدم في إعدادات المؤسسة إلى ترويسة ملف PDF المُصدَّر.
-
----
-
-## التغييرات المطلوبة
-
-### 1. تحديث `usePdfExport.ts`
-
-| الجزء | التغيير |
-|-------|---------|
-| الـ interface | إضافة خاصية `universityLogoUrl` و `universityName` للـ `ExportOptions` |
-| الترويسة | إضافة شعار الجامعة بجانب العنوان الرئيسي |
-
-**الترويسة الجديدة:**
-```text
-┌───────────────────────────────────────────────────────────────────────────┐
-│                                                                           │
-│  [شعار الجامعة]      جدول المحاضرات لدفعة: [اسم الدفعة]    [اسم الجامعة] │
-│                           [التاريخ بالتقويم العربي]                        │
-│                                                                           │
-└───────────────────────────────────────────────────────────────────────────┘
-```
-
-### 2. تحديث `TimetablePage.tsx`
-
-| الجزء | التغيير |
-|-------|---------|
-| imports | إضافة `useUserSettings` |
-| استدعاء الـ hook | جلب بيانات المستخدم `university_logo_url` و `university_name` |
-| دالة `handleExportPdf` | تمرير شعار واسم الجامعة للـ `exportToPdf` |
+1. دالة `useScheduleEntries()` تجلب **كل** الإدخالات بدون فلترة حسب `schedule_id`
+2. لا يوجد ربط بين الجدول النشط وما يتم عرضه
 
 ---
 
-## تصميم الترويسة الجديد
+## تحليل الكود الحالي
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│  ┌────────┐                                              ┌────────┐        │
-│  │ شعار   │      جدول المحاضرات لدفعة: الحاسب 2024      │ شعار   │        │
-│  │ الجامعة │              الأحد، 1 فبراير 2026           │ Connect │       │
-│  └────────┘                                              └────────┘        │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+### useActivateSchedule (المشكلة)
+
+```typescript
+// يقوم فقط بتحديث is_active
+await supabase
+  .from('saved_schedules')
+  .update({ is_active: true })
+  .eq('id', scheduleId);
+
+// لا يقوم بإبلاغ useScheduleEntries لإعادة الجلب!
 ```
 
-**ملاحظة:** إذا لم يكن هناك شعار مخصص، ستظهر الترويسة بدون الشعار.
+### useScheduleEntries (المشكلة)
+
+```typescript
+// يجلب كل الإدخالات بدون فلترة
+const { data, error } = await supabase
+  .from('schedule_entries')
+  .select(`*,...`);  // ← لا يوجد .eq('schedule_id', activeScheduleId)!
+```
+
+---
+
+## الحل المقترح
+
+### 1. تعديل `useScheduleEntries` لدعم الفلترة
+
+| التغيير | التفاصيل |
+|---------|----------|
+| إضافة معامل `scheduleId` | فلترة الإدخالات حسب الجدول المحفوظ |
+| إضافة `scheduleId` للـ `queryKey` | إعادة الجلب عند تغيير الجدول |
+
+```typescript
+export function useScheduleEntries(scheduleId?: string | null) {
+  return useQuery({
+    queryKey: ['schedule_entries', scheduleId],
+    queryFn: async () => {
+      let query = supabase
+        .from('schedule_entries')
+        .select(`*,room:rooms(*),time_slot:time_slots(*),subject:subjects(*,...)`);
+      
+      // فلترة حسب الجدول المحفوظ إذا كان موجوداً
+      if (scheduleId) {
+        query = query.eq('schedule_id', scheduleId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as ScheduleEntry[];
+    },
+  });
+}
+```
+
+### 2. تعديل `useActivateSchedule` لتحديث الـ cache
+
+```typescript
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
+  queryClient.invalidateQueries({ queryKey: ['schedule_entries'] }); // إضافة هذا السطر
+  toast({ title: 'تم تفعيل الجدول' });
+},
+```
+
+### 3. تعديل `TimetablePage` لتمرير الجدول النشط
+
+```typescript
+// الحصول على الجدول النشط
+const activeSchedule = savedSchedules?.find(s => s.is_active);
+
+// تمرير schedule_id للـ hook
+const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
+```
 
 ---
 
@@ -58,93 +92,91 @@
 
 | الملف | نوع التغيير |
 |-------|-------------|
-| `src/hooks/usePdfExport.ts` | إضافة دعم شعار الجامعة في الترويسة |
-| `src/pages/TimetablePage.tsx` | تمرير بيانات الجامعة للتصدير |
+| `src/hooks/useSchedule.ts` | تعديل `useScheduleEntries` لقبول `scheduleId` |
+| `src/hooks/useSavedSchedules.ts` | إضافة invalidate للـ `schedule_entries` |
+| `src/pages/TimetablePage.tsx` | تمرير `activeSchedule?.id` للـ hook |
 
 ---
 
-## التفاصيل التقنية
+## تفاصيل التنفيذ
 
-### تعديل ExportOptions
+### تعديل useSchedule.ts
 
 ```typescript
-interface ExportOptions {
-  filename?: string;
-  title?: string;
-  groupName?: string;
-  orientation?: 'portrait' | 'landscape';
-  universityLogoUrl?: string | null;  // جديد
-  universityName?: string | null;     // جديد
+export function useScheduleEntries(scheduleId?: string | null) {
+  return useQuery({
+    queryKey: ['schedule_entries', scheduleId],
+    queryFn: async () => {
+      let query = supabase
+        .from('schedule_entries')
+        .select(`
+          *,
+          room:rooms(*),
+          time_slot:time_slots(*),
+          subject:subjects(
+            *,
+            professor:professors(*),
+            group:student_groups(*)
+          )
+        `);
+      
+      // فلترة حسب الجدول المحفوظ
+      if (scheduleId) {
+        query = query.eq('schedule_id', scheduleId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as ScheduleEntry[];
+    },
+  });
 }
 ```
 
-### تعديل الترويسة في usePdfExport
+### تعديل useSavedSchedules.ts
 
 ```typescript
-// Create header with university logo
-const header = document.createElement('div');
-header.style.cssText = `
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #e5e7eb;
-`;
-
-// University logo (if available)
-const universityLogoHtml = universityLogoUrl 
-  ? `<img src="${universityLogoUrl}" width="70" height="70" style="object-fit: contain;" />`
-  : '';
-
-// University name (if available)
-const universityNameHtml = universityName
-  ? `<p style="font-size: 12px; color: #6b7280; margin-top: 4px;">${universityName}</p>`
-  : '';
-
-header.innerHTML = `
-  <div style="width: 80px; text-align: right;">
-    ${universityLogoHtml}
-  </div>
-  <div style="flex: 1; text-align: center;">
-    <h1 style="font-size: 28px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">
-      ${title}
-    </h1>
-    <p style="font-size: 14px; color: #6b7280; margin: 0;">
-      ${date}
-    </p>
-    ${universityNameHtml}
-  </div>
-  <div style="width: 80px;"></div>
-`;
+// في useActivateSchedule - onSuccess
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
+  queryClient.invalidateQueries({ queryKey: ['schedule_entries'] }); // جديد
+  toast({ title: 'تم تفعيل الجدول' });
+},
 ```
 
-### تحديث TimetablePage
+### تعديل TimetablePage.tsx
 
 ```typescript
-// Add import
-import { useUserSettings } from '@/hooks/useUserSettings';
+// قبل استدعاء useScheduleEntries
+const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
+const activeSchedule = savedSchedules?.find(s => s.is_active);
 
-// Inside component
-const { data: userSettings } = useUserSettings();
+// تمرير ID الجدول النشط
+const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
+```
 
-// Update handleExportPdf
-const handleExportPdf = async () => {
-  await exportToPdf('timetable-grid', { 
-    filename,
-    groupName,
-    orientation: 'landscape',
-    universityLogoUrl: userSettings?.university_logo_url,
-    universityName: userSettings?.university_name
-  });
-};
+---
+
+## تدفق العمل بعد الإصلاح
+
+```text
+المستخدم يضغط على جدول محفوظ
+          ↓
+useActivateSchedule يُحدّث is_active في قاعدة البيانات
+          ↓
+invalidateQueries للـ saved_schedules و schedule_entries
+          ↓
+useSavedSchedules يُعيد الجلب → activeSchedule يتغير
+          ↓
+useScheduleEntries يُعيد الجلب بفلتر schedule_id الجديد
+          ↓
+الجدول المعروض يتغير ✓
 ```
 
 ---
 
 ## النتيجة المتوقعة
 
-- إذا رفع المستخدم شعار جامعته من صفحة الإعدادات، سيظهر في الترويسة
-- إذا أضاف اسم الجامعة، سيظهر تحت العنوان
-- إذا لم تكن هناك إعدادات، الترويسة تبقى كما هي (العنوان + التاريخ فقط)
-
+- عند الضغط على جدول محفوظ، يتم عرض محتواه فوراً
+- كل جدول محفوظ يعرض إدخالاته الخاصة فقط
+- التبديل بين الجداول يعمل بسلاسة
