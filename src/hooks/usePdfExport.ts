@@ -8,6 +8,8 @@ interface ExportOptions {
   title?: string;
   groupName?: string;
   orientation?: 'portrait' | 'landscape';
+  universityLogoUrl?: string | null;
+  universityName?: string | null;
 }
 
 export function usePdfExport() {
@@ -20,7 +22,9 @@ export function usePdfExport() {
     const {
       filename = 'timetable',
       groupName,
-      orientation = 'landscape'
+      orientation = 'landscape',
+      universityLogoUrl,
+      universityName
     } = options;
 
     setIsExporting(true);
@@ -57,21 +61,40 @@ export function usePdfExport() {
         top: 0;
       `;
 
-      // Create header
+      // University logo HTML (if available)
+      const universityLogoHtml = universityLogoUrl 
+        ? `<img src="${universityLogoUrl}" width="70" height="70" style="object-fit: contain;" crossorigin="anonymous" />`
+        : '';
+
+      // University name HTML (if available)
+      const universityNameHtml = universityName
+        ? `<p style="font-size: 12px; color: #6b7280; margin-top: 4px;">${universityName}</p>`
+        : '';
+
+      // Create header with university logo
       const header = document.createElement('div');
       header.style.cssText = `
-        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         margin-bottom: 20px;
         padding-bottom: 15px;
         border-bottom: 2px solid #e5e7eb;
       `;
       header.innerHTML = `
-        <h1 style="font-size: 28px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">
-          ${title}
-        </h1>
-        <p style="font-size: 14px; color: #6b7280; margin: 0;">
-          ${date}
-        </p>
+        <div style="width: 80px; text-align: right;">
+          ${universityLogoHtml}
+        </div>
+        <div style="flex: 1; text-align: center;">
+          <h1 style="font-size: 28px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">
+            ${title}
+          </h1>
+          <p style="font-size: 14px; color: #6b7280; margin: 0;">
+            ${date}
+          </p>
+          ${universityNameHtml}
+        </div>
+        <div style="width: 80px;"></div>
       `;
 
       // Clone the table element

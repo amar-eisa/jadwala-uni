@@ -44,6 +44,7 @@ import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { SaveScheduleDialog } from '@/components/SaveScheduleDialog';
 import { SavedSchedulesMenu } from '@/components/SavedSchedulesMenu';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { DoorOpen } from 'lucide-react';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
@@ -144,6 +145,7 @@ export default function TimetablePage() {
   const clearSchedule = useClearSchedule();
   const moveEntry = useMoveScheduleEntry();
   const { exportToPdf, isExporting } = usePdfExport();
+  const { data: userSettings } = useUserSettings();
   
   // Saved schedules hooks
   const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
@@ -329,7 +331,9 @@ export default function TimetablePage() {
     await exportToPdf('timetable-grid', { 
       filename,
       groupName,
-      orientation: 'landscape'
+      orientation: 'landscape',
+      universityLogoUrl: userSettings?.university_logo_url,
+      universityName: userSettings?.university_name
     });
   };
 
