@@ -1,141 +1,56 @@
 
-# خطة إصلاح تصدير PDF مع دعم اللغة العربية
 
-## المشكلة الحالية
+# خطة إضافة شعار الجامعة المخصص في ترويسة PDF
 
-استخدام `jsPDF` مباشرة لا يدعم الحروف العربية بشكل صحيح لأنه يستخدم خطوط لاتينية فقط.
+## الهدف
 
----
-
-## الحل
-
-إنشاء مستند HTML كامل يحتوي على الجدول مع الترويسة والتذييل، ثم تحويله إلى صورة باستخدام `html2canvas` وإضافتها للـ PDF. هذا يضمن ظهور النص العربي بشكل صحيح.
+إضافة شعار الجامعة الذي رفعه المستخدم في إعدادات المؤسسة إلى ترويسة ملف PDF المُصدَّر.
 
 ---
 
 ## التغييرات المطلوبة
 
-### ملف `src/hooks/usePdfExport.ts`
+### 1. تحديث `usePdfExport.ts`
 
 | الجزء | التغيير |
 |-------|---------|
-| إنشاء wrapper HTML | إنشاء عنصر HTML يحتوي على الترويسة + الجدول + التذييل |
-| الترويسة | عنوان "جدول المحاضرات لدفعة: [اسم الدفعة]" + التاريخ |
-| التذييل | شعار Connect + "جميع الحقوق محفوظة" + بيانات التواصل الجديدة |
-| html2canvas | تحويل العنصر الكامل لصورة |
-| تصدير PDF | إضافة الصورة للـ PDF بمقاس A4 عرضي |
+| الـ interface | إضافة خاصية `universityLogoUrl` و `universityName` للـ `ExportOptions` |
+| الترويسة | إضافة شعار الجامعة بجانب العنوان الرئيسي |
 
----
-
-## هيكل الملف المُصدَّر
-
+**الترويسة الجديدة:**
 ```text
 ┌───────────────────────────────────────────────────────────────────────────┐
 │                                                                           │
-│                    جدول المحاضرات لدفعة: [اسم الدفعة]                      │
-│                           [التاريخ بالتقويم العربي]                         │
+│  [شعار الجامعة]      جدول المحاضرات لدفعة: [اسم الدفعة]    [اسم الجامعة] │
+│                           [التاريخ بالتقويم العربي]                        │
 │                                                                           │
-├───────────────────────────────────────────────────────────────────────────┤
-│                                                                           │
-│                                                                           │
-│                           [جدول المحاضرات]                                │
-│                                                                           │
-│                                                                           │
-├───────────────────────────────────────────────────────────────────────────┤
-│  [شعار Connect]     جميع الحقوق محفوظة                                    │
-│                     للتواصل: amareisa.info@gmail.com - +294 128150105     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
----
+### 2. تحديث `TimetablePage.tsx`
 
-## الكود الجديد
-
-### 1. إنشاء عنصر HTML للتصدير
-
-بدلاً من إضافة النص مباشرة للـ PDF (الذي لا يدعم العربية)، سننشئ عنصر HTML مؤقت:
-
-```typescript
-// إنشاء wrapper يحتوي على كل شيء
-const wrapper = document.createElement('div');
-wrapper.style.cssText = `
-  width: 1123px; /* A4 landscape in pixels at 96 DPI */
-  background: white;
-  padding: 30px;
-  direction: rtl;
-  font-family: 'Noto Sans Arabic', 'Cairo', sans-serif;
-`;
-
-// الترويسة
-const header = document.createElement('div');
-header.innerHTML = `
-  <h1 style="text-align: center; font-size: 24px; margin-bottom: 10px;">
-    جدول المحاضرات لدفعة: ${groupName}
-  </h1>
-  <p style="text-align: center; color: #666; font-size: 14px;">
-    ${date}
-  </p>
-`;
-
-// نسخ الجدول
-const tableClone = element.cloneNode(true);
-
-// التذييل
-const footer = document.createElement('div');
-footer.innerHTML = `
-  <div style="display: flex; align-items: center; gap: 15px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
-    <img src="${connectLogoUrl}" width="50" height="40" />
-    <div>
-      <p style="margin: 0;">جميع الحقوق محفوظة</p>
-      <p style="margin: 0; font-size: 12px;">
-        للتواصل: amareisa.info@gmail.com - +294 128150105
-      </p>
-    </div>
-  </div>
-`;
-```
-
-### 2. تحويل HTML إلى صورة ثم PDF
-
-```typescript
-// إضافة العناصر للـ wrapper
-wrapper.appendChild(header);
-wrapper.appendChild(tableClone);
-wrapper.appendChild(footer);
-
-// إضافة للصفحة مؤقتاً
-document.body.appendChild(wrapper);
-
-// تحويل لصورة
-const canvas = await html2canvas(wrapper, {
-  scale: 2,
-  useCORS: true,
-  backgroundColor: '#ffffff',
-});
-
-// إزالة العنصر المؤقت
-document.body.removeChild(wrapper);
-
-// إنشاء PDF
-const pdf = new jsPDF({
-  orientation: 'landscape',
-  unit: 'mm',
-  format: 'a4',
-});
-
-const imgData = canvas.toDataURL('image/png');
-pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
-pdf.save(filename + '.pdf');
-```
+| الجزء | التغيير |
+|-------|---------|
+| imports | إضافة `useUserSettings` |
+| استدعاء الـ hook | جلب بيانات المستخدم `university_logo_url` و `university_name` |
+| دالة `handleExportPdf` | تمرير شعار واسم الجامعة للـ `exportToPdf` |
 
 ---
 
-## تحديث بيانات التواصل
+## تصميم الترويسة الجديد
 
-| القديم | الجديد |
-|--------|--------|
-| jadwala.app@gmail.com | amareisa.info@gmail.com |
-| +294 128150105 | +294 128150105 (نفس الرقم) |
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ┌────────┐                                              ┌────────┐        │
+│  │ شعار   │      جدول المحاضرات لدفعة: الحاسب 2024      │ شعار   │        │
+│  │ الجامعة │              الأحد، 1 فبراير 2026           │ Connect │       │
+│  └────────┘                                              └────────┘        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**ملاحظة:** إذا لم يكن هناك شعار مخصص، ستظهر الترويسة بدون الشعار.
 
 ---
 
@@ -143,13 +58,93 @@ pdf.save(filename + '.pdf');
 
 | الملف | نوع التغيير |
 |-------|-------------|
-| `src/hooks/usePdfExport.ts` | إعادة كتابة الدالة لاستخدام HTML wrapper |
+| `src/hooks/usePdfExport.ts` | إضافة دعم شعار الجامعة في الترويسة |
+| `src/pages/TimetablePage.tsx` | تمرير بيانات الجامعة للتصدير |
+
+---
+
+## التفاصيل التقنية
+
+### تعديل ExportOptions
+
+```typescript
+interface ExportOptions {
+  filename?: string;
+  title?: string;
+  groupName?: string;
+  orientation?: 'portrait' | 'landscape';
+  universityLogoUrl?: string | null;  // جديد
+  universityName?: string | null;     // جديد
+}
+```
+
+### تعديل الترويسة في usePdfExport
+
+```typescript
+// Create header with university logo
+const header = document.createElement('div');
+header.style.cssText = `
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e5e7eb;
+`;
+
+// University logo (if available)
+const universityLogoHtml = universityLogoUrl 
+  ? `<img src="${universityLogoUrl}" width="70" height="70" style="object-fit: contain;" />`
+  : '';
+
+// University name (if available)
+const universityNameHtml = universityName
+  ? `<p style="font-size: 12px; color: #6b7280; margin-top: 4px;">${universityName}</p>`
+  : '';
+
+header.innerHTML = `
+  <div style="width: 80px; text-align: right;">
+    ${universityLogoHtml}
+  </div>
+  <div style="flex: 1; text-align: center;">
+    <h1 style="font-size: 28px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">
+      ${title}
+    </h1>
+    <p style="font-size: 14px; color: #6b7280; margin: 0;">
+      ${date}
+    </p>
+    ${universityNameHtml}
+  </div>
+  <div style="width: 80px;"></div>
+`;
+```
+
+### تحديث TimetablePage
+
+```typescript
+// Add import
+import { useUserSettings } from '@/hooks/useUserSettings';
+
+// Inside component
+const { data: userSettings } = useUserSettings();
+
+// Update handleExportPdf
+const handleExportPdf = async () => {
+  await exportToPdf('timetable-grid', { 
+    filename,
+    groupName,
+    orientation: 'landscape',
+    universityLogoUrl: userSettings?.university_logo_url,
+    universityName: userSettings?.university_name
+  });
+};
+```
 
 ---
 
 ## النتيجة المتوقعة
 
-- الحروف العربية تظهر بشكل صحيح
-- الترويسة تحتوي على اسم الدفعة والتاريخ
-- التذييل يحتوي على شعار Connect وبيانات التواصل الجديدة
-- PDF بمقاس A4 عرضي (landscape)
+- إذا رفع المستخدم شعار جامعته من صفحة الإعدادات، سيظهر في الترويسة
+- إذا أضاف اسم الجامعة، سيظهر تحت العنوان
+- إذا لم تكن هناك إعدادات، الترويسة تبقى كما هي (العنوان + التاريخ فقط)
+
