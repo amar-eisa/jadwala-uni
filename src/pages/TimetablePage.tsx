@@ -135,7 +135,11 @@ function DroppableSlot({ id, children, isEmpty }: { id: string; children: React.
 
 export default function TimetablePage() {
   const { isActive: isActiveSubscription } = useIsActiveSubscription();
-  const { data: scheduleEntries, isLoading } = useScheduleEntries();
+  // Get active schedule from saved schedules
+  const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
+  const activeSchedule = savedSchedules?.find(s => s.is_active);
+  
+  const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
   const { data: timeSlots } = useTimeSlots();
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
@@ -148,7 +152,6 @@ export default function TimetablePage() {
   const { data: userSettings } = useUserSettings();
   
   // Saved schedules hooks
-  const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
   const saveSchedule = useSaveSchedule();
   const activateSchedule = useActivateSchedule();
   const deleteSavedSchedule = useDeleteSavedSchedule();
