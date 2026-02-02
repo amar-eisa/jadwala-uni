@@ -125,6 +125,7 @@ export function useActivateSchedule() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
       toast({ title: 'تم تفعيل الجدول' });
     },
     onError: (error) => {

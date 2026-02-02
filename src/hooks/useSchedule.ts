@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { ScheduleEntry } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
 
-export function useScheduleEntries() {
+export function useScheduleEntries(scheduleId?: string | null) {
   return useQuery({
-    queryKey: ['schedule_entries'],
+    queryKey: ['schedule_entries', scheduleId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('schedule_entries')
         .select(`
           *,
@@ -20,6 +20,12 @@ export function useScheduleEntries() {
           )
         `);
       
+      // فلترة حسب الجدول المحفوظ
+      if (scheduleId) {
+        query = query.eq('schedule_id', scheduleId);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data as ScheduleEntry[];
     },
