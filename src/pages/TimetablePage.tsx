@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useScheduleEntries, useGenerateSchedule, useClearSchedule, useMoveScheduleEntry } from '@/hooks/useSchedule';
 import { useSavedSchedules, useSaveSchedule, useActivateSchedule, useDeleteSavedSchedule } from '@/hooks/useSavedSchedules';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
@@ -24,7 +25,7 @@ import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePdfExport } from '@/hooks/usePdfExport';
@@ -135,10 +136,50 @@ function DroppableSlot({ id, children, isEmpty }: { id: string; children: React.
 
 export default function TimetablePage() {
   const { isActive: isActiveSubscription } = useIsActiveSubscription();
-  // Get active schedule from saved schedules
-  const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
-  const activeSchedule = savedSchedules?.find(s => s.is_active);
   
+  // Get ALL saved schedules (not filtered by group)
+  const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
+  
+  // Group selection for generation
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
+  
+  // Determine active schedule based on context
+  // Logic: Find the active schedule that matches current context
+  const activeSchedule = useMemo(() => {
+    if (!savedSchedules) return null;
+    
+    // First, find any active schedule
+    const anyActive = savedSchedules.find(s => s.is_active);
+    if (!anyActive) return null;
+    
+    // If viewing a specific group:
+    if (selectedGroupId !== 'all') {
+      // Prefer a group-specific active schedule
+      const groupActive = savedSchedules.find(
+        s => s.is_active && s.group_id === selectedGroupId
+      );
+      if (groupActive) return groupActive;
+      
+      // Fall back to global active schedule (group_id = null)
+      const globalActive = savedSchedules.find(
+        s => s.is_active && s.group_id === null
+      );
+      if (globalActive) return globalActive;
+    }
+    
+    // If viewing all groups, use global active or any active
+    if (selectedGroupId === 'all') {
+      const globalActive = savedSchedules.find(
+        s => s.is_active && s.group_id === null
+      );
+      if (globalActive) return globalActive;
+    }
+    
+    // Fallback to any active schedule
+    return anyActive;
+  }, [savedSchedules, selectedGroupId]);
+  
+  // Fetch schedule entries based on active schedule
   const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
   const { data: timeSlots } = useTimeSlots();
   const { data: rooms } = useRooms();
@@ -156,8 +197,6 @@ export default function TimetablePage() {
   const activateSchedule = useActivateSchedule();
   const deleteSavedSchedule = useDeleteSavedSchedule();
 
-  // Group selection for generation
-  const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   
   const [filterType, setFilterType] = useState<'all' | 'room' | 'professor' | 'group'>('all');
@@ -174,6 +213,16 @@ export default function TimetablePage() {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
+
+  // Auto-switch to the group when activating a group-specific schedule
+  const handleActivateSchedule = useCallback((scheduleId: string) => {
+    const schedule = savedSchedules?.find(s => s.id === scheduleId);
+    if (schedule?.group_id) {
+      // If the schedule is for a specific group, switch to that group
+      setSelectedGroupId(schedule.group_id);
+    }
+    activateSchedule.mutate(scheduleId);
+  }, [savedSchedules, activateSchedule]);
 
   // Create group color map
   const groupColorMap = useMemo(() => {
@@ -225,6 +274,9 @@ export default function TimetablePage() {
     
     return entries;
   }, [scheduleEntries, selectedGroupId, filterType, filterId]);
+
+  // Check if active schedule is empty (for showing helpful message)
+  const isActiveScheduleEmpty = activeSchedule && scheduleEntries?.length === 0;
 
   const getEntriesForSlot = (day: DayOfWeek, startTime: string, endTime: string): ScheduleEntry[] => {
     return filteredEntries.filter((entry) => {
@@ -308,7 +360,10 @@ export default function TimetablePage() {
 
   const handleGenerateSchedule = async () => {
     const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
-    await generateSchedule.mutateAsync(groupId);
+    await generateSchedule.mutateAsync({ 
+      groupId, 
+      scheduleId: activeSchedule?.id 
+    });
   };
 
   const handleClearSchedule = async () => {
@@ -318,7 +373,10 @@ export default function TimetablePage() {
       : groups?.find(g => g.id === selectedGroupId)?.name || 'الجدول';
     
     if (confirm(`هل تريد مسح ${groupName}؟`)) {
-      await clearSchedule.mutateAsync(groupId);
+      await clearSchedule.mutateAsync({ 
+        groupId, 
+        scheduleId: activeSchedule?.id 
+      });
     }
   };
 
@@ -372,6 +430,18 @@ export default function TimetablePage() {
           </div>
         </div>
 
+        {/* Empty Schedule Alert */}
+        {isActiveScheduleEmpty && (
+          <Alert variant="default" className="border-warning/50 bg-warning/10">
+            <AlertCircle className="h-4 w-4 text-warning" />
+            <AlertTitle>الجدول المحفوظ فارغ</AlertTitle>
+            <AlertDescription>
+              هذا الجدول المحفوظ لا يحتوي على محاضرات. قد يكون تم مسحه عند توليد جدول جديد سابقاً.
+              يمكنك إعادة توليد الجدول وحفظه كنسخة جديدة.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Group Selection and Actions */}
         <Card className="border-0 shadow-card">
           <CardHeader className="pb-3">
@@ -406,7 +476,7 @@ export default function TimetablePage() {
                 <SavedSchedulesMenu
                   schedules={savedSchedules || []}
                   isLoading={isLoadingSaved}
-                  onActivate={(id) => activateSchedule.mutate(id)}
+                  onActivate={handleActivateSchedule}
                   onDelete={(id) => deleteSavedSchedule.mutate(id)}
                   disabled={!isActiveSubscription}
                 />
@@ -459,6 +529,12 @@ export default function TimetablePage() {
                   <span className="font-medium text-foreground">المواد:</span> {subjects?.filter(s => s.group_id === selectedGroupId).length || 0} مادة
                   {' • '}
                   <span className="font-medium text-foreground">المحاضرات المجدولة:</span> {filteredEntries.length} محاضرة
+                  {activeSchedule && (
+                    <>
+                      {' • '}
+                      <span className="font-medium text-foreground">الجدول النشط:</span> {activeSchedule.name}
+                    </>
+                  )}
                 </p>
               </div>
             )}

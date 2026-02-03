@@ -11,20 +11,16 @@ export interface SavedSchedule {
   created_at: string;
 }
 
-export function useSavedSchedules(groupId?: string) {
+export function useSavedSchedules() {
   return useQuery({
-    queryKey: ['saved_schedules', groupId],
+    queryKey: ['saved_schedules'],
     queryFn: async () => {
-      let query = supabase
+      // Fetch ALL saved schedules (don't filter by group)
+      // So we can properly select active schedule based on context
+      const { data, error } = await supabase
         .from('saved_schedules')
         .select('*')
         .order('created_at', { ascending: false });
-      
-      if (groupId && groupId !== 'all') {
-        query = query.eq('group_id', groupId);
-      }
-      
-      const { data, error } = await query;
       
       if (error) throw error;
       return data as SavedSchedule[];
@@ -40,7 +36,7 @@ export function useSaveSchedule() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('يجب تسجيل الدخول');
 
-      // Deactivate existing active schedules for this group
+      // Deactivate existing active schedules (all of them)
       await supabase
         .from('saved_schedules')
         .update({ is_active: false })
@@ -61,17 +57,19 @@ export function useSaveSchedule() {
       
       if (error) throw error;
       
-      // Update current schedule entries to link to this saved schedule
-      const updateQuery = supabase
+      // Update current DRAFT schedule entries (schedule_id IS NULL) to link to this saved schedule
+      // Only update entries for the specific group if groupId is provided
+      let updateQuery = supabase
         .from('schedule_entries')
         .update({ schedule_id: data.id })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .is('schedule_id', null);  // Only update draft entries
       
       if (groupId) {
-        await updateQuery.eq('group_id', groupId);
-      } else {
-        await updateQuery;
+        updateQuery = updateQuery.eq('group_id', groupId);
       }
+      
+      await updateQuery;
       
       return data as SavedSchedule;
     },
@@ -107,7 +105,7 @@ export function useActivateSchedule() {
       
       if (fetchError) throw fetchError;
 
-      // Deactivate all schedules
+      // Deactivate all schedules for this user
       await supabase
         .from('saved_schedules')
         .update({ is_active: false })
@@ -123,10 +121,13 @@ export function useActivateSchedule() {
       
       return schedule as SavedSchedule;
     },
-    onSuccess: () => {
+    onSuccess: (schedule) => {
       queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
       queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
       toast({ title: 'تم تفعيل الجدول' });
+      
+      // Return the activated schedule so callers can use it
+      return schedule;
     },
     onError: (error) => {
       toast({ 
@@ -143,6 +144,13 @@ export function useDeleteSavedSchedule() {
   
   return useMutation({
     mutationFn: async (scheduleId: string) => {
+      // First, unlink all entries from this schedule (set schedule_id to null - they become drafts)
+      await supabase
+        .from('schedule_entries')
+        .update({ schedule_id: null })
+        .eq('schedule_id', scheduleId);
+      
+      // Then delete the saved schedule record
       const { error } = await supabase
         .from('saved_schedules')
         .delete()
