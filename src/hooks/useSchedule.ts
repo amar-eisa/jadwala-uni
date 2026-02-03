@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 
 export function useScheduleEntries(scheduleId?: string | null) {
   return useQuery({
-    queryKey: ['schedule_entries', scheduleId ?? 'draft'],
+    queryKey: ['schedule_entries', scheduleId],
     queryFn: async () => {
       let query = supabase
         .from('schedule_entries')
@@ -20,12 +20,9 @@ export function useScheduleEntries(scheduleId?: string | null) {
           )
         `);
       
-      // Filter by schedule_id - if provided, get that schedule's entries
-      // If not provided (null/undefined), get draft entries (schedule_id IS NULL)
+      // فلترة حسب الجدول المحفوظ
       if (scheduleId) {
         query = query.eq('schedule_id', scheduleId);
-      } else {
-        query = query.is('schedule_id', null);
       }
       
       const { data, error } = await query;
@@ -39,15 +36,12 @@ export function useGenerateSchedule() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ groupId, scheduleId }: { groupId?: string; scheduleId?: string | null }) => {
+    mutationFn: async (groupId?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('يجب تسجيل الدخول');
 
       const { data, error } = await supabase.functions.invoke('generate-schedule', {
-        body: { 
-          group_id: groupId,
-          schedule_id: scheduleId ?? null
-        }
+        body: { user_id: user.id, group_id: groupId }
       });
       
       if (error) throw error;
@@ -74,25 +68,15 @@ export function useClearSchedule() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ groupId, scheduleId }: { groupId?: string; scheduleId?: string | null }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('يجب تسجيل الدخول');
-      
+    mutationFn: async (groupId?: string) => {
       let query = supabase
         .from('schedule_entries')
-        .delete()
-        .eq('user_id', user.id);
+        .delete();
       
-      // Restrict delete to specific schedule_id or drafts only
-      if (scheduleId) {
-        query = query.eq('schedule_id', scheduleId);
-      } else {
-        query = query.is('schedule_id', null);
-      }
-      
-      // Further restrict by group_id if specified
       if (groupId) {
         query = query.eq('group_id', groupId);
+      } else {
+        query = query.neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
       }
       
       const { error } = await query;
