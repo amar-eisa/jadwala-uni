@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface Subject {
@@ -60,34 +60,59 @@ interface ExistingEntry {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Get user_id, optional group_id, and optional schedule details from request body
-    const { user_id, group_id, schedule_name } = await req.json();
-    if (!user_id) {
-      throw new Error('user_id is required');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Get user from Authorization header (JWT)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log(`Generating schedule for user: ${user_id}${group_id ? `, group: ${group_id}` : ' (all groups)'}${schedule_name ? `, name: ${schedule_name}` : ''}`);
+    // Create client with user's token to validate
+    const supabaseWithAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseWithAuth.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
+    
+    // Use service role for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get optional group_id and schedule_id from request body
+    const { group_id, schedule_id } = await req.json();
+
+    console.log(`Generating schedule for user: ${userId}${group_id ? `, group: ${group_id}` : ' (all groups)'}${schedule_id ? `, schedule: ${schedule_id}` : ' (draft)'}`);
 
     // Fetch all required data for this user
-    // Build subjects query - filter by group_id if specified
-    let subjectsQuery = supabase.from('subjects').select('*').eq('user_id', user_id);
+    let subjectsQuery = supabase.from('subjects').select('*').eq('user_id', userId);
     if (group_id) {
       subjectsQuery = subjectsQuery.eq('group_id', group_id);
     }
 
     const [roomsRes, timeSlotsRes, subjectsRes, unavailabilityRes] = await Promise.all([
-      supabase.from('rooms').select('*').eq('user_id', user_id),
-      supabase.from('time_slots').select('*').eq('user_id', user_id),
+      supabase.from('rooms').select('*').eq('user_id', userId),
+      supabase.from('time_slots').select('*').eq('user_id', userId),
       subjectsQuery,
-      supabase.from('professor_unavailability').select('*').eq('user_id', user_id),
+      supabase.from('professor_unavailability').select('*').eq('user_id', userId),
     ]);
 
     if (roomsRes.error) throw roomsRes.error;
@@ -102,9 +127,6 @@ serve(async (req) => {
 
     console.log(`Starting schedule generation: ${subjects.length} subjects, ${timeSlots.length} time slots, ${rooms.length} rooms`);
     console.log(`Professor unavailability entries: ${unavailabilities.length}`);
-    if (group_id) {
-      console.log(`Generating for specific group: ${group_id}`);
-    }
 
     // Build professor unavailability lookup
     const professorUnavailabilityMap: Record<string, ProfessorUnavailability[]> = {};
@@ -146,92 +168,72 @@ serve(async (req) => {
       return true;
     }
 
-    // Clear existing schedule for this user (and group if specified)
-    let deleteQuery = supabase.from('schedule_entries').delete().eq('user_id', user_id);
+    // CRITICAL FIX: Delete entries only for the specific schedule_id or drafts
+    // This prevents deleting entries from other saved schedules
+    let deleteQuery = supabase.from('schedule_entries').delete().eq('user_id', userId);
+    
+    if (schedule_id) {
+      // Delete only entries belonging to this specific saved schedule
+      deleteQuery = deleteQuery.eq('schedule_id', schedule_id);
+    } else {
+      // Delete only draft entries (schedule_id IS NULL)
+      deleteQuery = deleteQuery.is('schedule_id', null);
+    }
+    
     if (group_id) {
       deleteQuery = deleteQuery.eq('group_id', group_id);
     }
+    
     const { error: deleteError } = await deleteQuery;
     if (deleteError) {
       console.error('Error deleting existing entries:', deleteError);
       throw deleteError;
     }
 
-    // === FIX: Fetch remaining entries from other groups to avoid conflicts ===
+    console.log(`Deleted existing entries for ${schedule_id ? `schedule ${schedule_id}` : 'drafts'}${group_id ? ` and group ${group_id}` : ''}`);
+
+    // === FIX: Fetch remaining entries to avoid conflicts ===
+    // Only consider entries within the SAME schedule context for conflicts
     const occupiedRoomSlots = new Set<string>();
     const occupiedProfessorSlots = new Set<string>();
     const occupiedGroupSlots = new Set<string>();
 
-    if (group_id) {
-      // Only fetch existing entries if generating for a specific group
-      const { data: existingEntries, error: existingError } = await supabase
-        .from('schedule_entries')
-        .select('room_id, time_slot_id, subject:subjects(professor_id, group_id)')
-        .eq('user_id', user_id);
-
-      if (existingError) {
-        console.error('Error fetching existing entries:', existingError);
-        throw existingError;
-      }
-
-      // Pre-fill occupied slots from existing entries (other groups)
-      for (const entry of (existingEntries as ExistingEntry[]) || []) {
-        occupiedRoomSlots.add(`${entry.room_id}-${entry.time_slot_id}`);
-        // subject is returned as array from select, get first element
-        const subject = Array.isArray(entry.subject) ? entry.subject[0] : entry.subject;
-        if (subject?.professor_id) {
-          occupiedProfessorSlots.add(`${subject.professor_id}-${entry.time_slot_id}`);
-        }
-        if (subject?.group_id) {
-          occupiedGroupSlots.add(`${subject.group_id}-${entry.time_slot_id}`);
-        }
-      }
-
-      console.log(`Pre-filled occupied slots - Rooms: ${occupiedRoomSlots.size}, Professors: ${occupiedProfessorSlots.size}, Groups: ${occupiedGroupSlots.size}`);
+    // Build existing entries query - fetch entries from the SAME schedule context
+    let existingQuery = supabase
+      .from('schedule_entries')
+      .select('room_id, time_slot_id, subject:subjects(professor_id, group_id)')
+      .eq('user_id', userId);
+    
+    if (schedule_id) {
+      existingQuery = existingQuery.eq('schedule_id', schedule_id);
+    } else {
+      existingQuery = existingQuery.is('schedule_id', null);
     }
+
+    const { data: existingEntries, error: existingError } = await existingQuery;
+
+    if (existingError) {
+      console.error('Error fetching existing entries:', existingError);
+      throw existingError;
+    }
+
+    // Pre-fill occupied slots from existing entries (other groups within same schedule)
+    for (const entry of (existingEntries as ExistingEntry[]) || []) {
+      occupiedRoomSlots.add(`${entry.room_id}-${entry.time_slot_id}`);
+      const subject = Array.isArray(entry.subject) ? entry.subject[0] : entry.subject;
+      if (subject?.professor_id) {
+        occupiedProfessorSlots.add(`${subject.professor_id}-${entry.time_slot_id}`);
+      }
+      if (subject?.group_id) {
+        occupiedGroupSlots.add(`${subject.group_id}-${entry.time_slot_id}`);
+      }
+    }
+
+    console.log(`Pre-filled occupied slots - Rooms: ${occupiedRoomSlots.size}, Professors: ${occupiedProfessorSlots.size}, Groups: ${occupiedGroupSlots.size}`);
 
     // Track usage for load balancing
     const roomUsage: Record<string, number> = {};
     rooms.forEach(r => roomUsage[r.id] = 0);
-
-    // Create saved schedule record if name is provided
-    let savedScheduleId: string | null = null;
-    if (schedule_name) {
-      // Deactivate any existing active schedule for this group
-      await supabase
-        .from('saved_schedules')
-        .update({ is_active: false })
-        .eq('user_id', user_id)
-        .eq('is_active', true);
-
-      if (group_id) {
-        await supabase
-          .from('saved_schedules')
-          .update({ is_active: false })
-          .eq('user_id', user_id)
-          .eq('group_id', group_id)
-          .eq('is_active', true);
-      }
-
-      const { data: savedSchedule, error: saveError } = await supabase
-        .from('saved_schedules')
-        .insert({
-          user_id,
-          name: schedule_name,
-          group_id: group_id || null,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (saveError) {
-        console.error('Error creating saved schedule:', saveError);
-        throw saveError;
-      }
-      
-      savedScheduleId = savedSchedule.id;
-      console.log(`Created saved schedule: ${savedScheduleId} with name: ${schedule_name}`);
-    }
 
     const scheduleEntries: ScheduleEntry[] = [];
 
@@ -350,9 +352,9 @@ serve(async (req) => {
                 room_id: room.id,
                 time_slot_id: timeSlot.id,
                 subject_id: subject.id,
-                user_id: user_id,
+                user_id: userId,
                 group_id: subject.group_id,
-                schedule_id: savedScheduleId,
+                schedule_id: schedule_id || null,  // Use provided schedule_id or null for draft
               });
               
               occupiedRoomSlots.add(roomKey);
@@ -418,7 +420,7 @@ serve(async (req) => {
         scheduled: scheduleEntries.length,
         total: totalSessionsNeeded,
         subjects: subjects.length,
-        schedule_id: savedScheduleId,
+        schedule_id: schedule_id || null,
         message: `تم جدولة ${scheduleEntries.length} من ${totalSessionsNeeded} محاضرة`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
