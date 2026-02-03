@@ -1,182 +1,163 @@
 
-# خطة إصلاح عرض الجدول المحفوظ عند تفعيله
+## تشخيص سريع للمشكلة (لماذا يصبح الجدول فارغاً عند اختيار جدول محفوظ؟)
 
-## المشكلة
+حسب سلوكك “يصبح الجدول فارغاً”، فالسبب الأكثر احتمالاً ليس واجهة العرض نفسها، بل **أن بيانات `schedule_entries` الخاصة بهذا الجدول المحفوظ لم تعد موجودة/مرتبطة به**. ويحدث هذا غالباً بسبب نقطتين في الكود الحالي:
 
-عند الضغط على جدول محفوظ من القائمة المنسدلة، يتم تحديث علامة `is_active` فقط، لكن **لا يتغير الجدول المعروض** لأن:
+1) **توليد الجدول (generate-schedule)** يقوم بـ **حذف** صفوف `schedule_entries` حسب `user_id` (+ `group_id`) فقط، بدون أي تقييد بـ `schedule_id`  
+   → هذا يؤدي إلى مسح محاضرات جداول محفوظة قديمة عند توليد جدول جديد لنفس الدفعة.
 
-1. دالة `useScheduleEntries()` تجلب **كل** الإدخالات بدون فلترة حسب `schedule_id`
-2. لا يوجد ربط بين الجدول النشط وما يتم عرضه
+2) عمليات مثل **مسح الجدول** و/أو **حفظ الجدول** لا تُقيّد كل عملياتها بـ `schedule_id` في كل الحالات  
+   → ممكن أن يتم نقل/حذف/استبدال محاضرات تخص نسخ أخرى، فتظهر النسخ المحفوظة لاحقاً “فارغة”.
 
----
-
-## تحليل الكود الحالي
-
-### useActivateSchedule (المشكلة)
-
-```typescript
-// يقوم فقط بتحديث is_active
-await supabase
-  .from('saved_schedules')
-  .update({ is_active: true })
-  .eq('id', scheduleId);
-
-// لا يقوم بإبلاغ useScheduleEntries لإعادة الجلب!
-```
-
-### useScheduleEntries (المشكلة)
-
-```typescript
-// يجلب كل الإدخالات بدون فلترة
-const { data, error } = await supabase
-  .from('schedule_entries')
-  .select(`*,...`);  // ← لا يوجد .eq('schedule_id', activeScheduleId)!
-```
+بالإضافة إلى ذلك، لأنك تريد “الاثنان معاً” (جداول عامة + جداول لكل دفعة)، يلزم أن ندير “الجدول النشط” حسب السياق (عام vs دفعة) حتى لا نختار جدولاً نشطاً خاطئاً.
 
 ---
 
-## الحل المقترح
+## الهدف من الإصلاح
 
-### 1. تعديل `useScheduleEntries` لدعم الفلترة
-
-| التغيير | التفاصيل |
-|---------|----------|
-| إضافة معامل `scheduleId` | فلترة الإدخالات حسب الجدول المحفوظ |
-| إضافة `scheduleId` للـ `queryKey` | إعادة الجلب عند تغيير الجدول |
-
-```typescript
-export function useScheduleEntries(scheduleId?: string | null) {
-  return useQuery({
-    queryKey: ['schedule_entries', scheduleId],
-    queryFn: async () => {
-      let query = supabase
-        .from('schedule_entries')
-        .select(`*,room:rooms(*),time_slot:time_slots(*),subject:subjects(*,...)`);
-      
-      // فلترة حسب الجدول المحفوظ إذا كان موجوداً
-      if (scheduleId) {
-        query = query.eq('schedule_id', scheduleId);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as ScheduleEntry[];
-    },
-  });
-}
-```
-
-### 2. تعديل `useActivateSchedule` لتحديث الـ cache
-
-```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
-  queryClient.invalidateQueries({ queryKey: ['schedule_entries'] }); // إضافة هذا السطر
-  toast({ title: 'تم تفعيل الجدول' });
-},
-```
-
-### 3. تعديل `TimetablePage` لتمرير الجدول النشط
-
-```typescript
-// الحصول على الجدول النشط
-const activeSchedule = savedSchedules?.find(s => s.is_active);
-
-// تمرير schedule_id للـ hook
-const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
-```
+1) عند الضغط على جدول محفوظ: **يتغير الجدول المعروض فوراً ويظهر محتواه الصحيح** (وليس فارغاً).
+2) توليد جدول جديد لدفعة ما **لا يمسح محتويات الجداول المحفوظة الأخرى**.
+3) دعم “الاثنان معاً”:
+   - جدول عام (group_id = null)
+   - جداول خاصة بدفعات (group_id = UUID)
+   - ويكون هناك “نشط” لكل سياق بدون تداخل.
 
 ---
 
-## الملفات المتأثرة
+## الخطة التنفيذية (التغييرات المطلوبة)
 
-| الملف | نوع التغيير |
-|-------|-------------|
-| `src/hooks/useSchedule.ts` | تعديل `useScheduleEntries` لقبول `scheduleId` |
-| `src/hooks/useSavedSchedules.ts` | إضافة invalidate للـ `schedule_entries` |
-| `src/pages/TimetablePage.tsx` | تمرير `activeSchedule?.id` للـ hook |
+### (A) اختيار الجدول النشط بشكل صحيح داخل TimetablePage (لـ “الاثنان معاً”)
 
----
+سنعدل منطق اختيار `activeSchedule` في `TimetablePage.tsx` ليكون:
 
-## تفاصيل التنفيذ
+- إذا كانت الدفعة المختارة `selectedGroupId !== 'all'`:
+  1) نبحث عن جدول نشط خاص بهذه الدفعة (`schedule.group_id === selectedGroupId && is_active`)
+  2) إن لم يوجد: نرجع للجدول العام النشط (`group_id === null && is_active`)
+  3) إن لم يوجد: نعرض “المسودة/غير محفوظ” (schedule_id = null)
 
-### تعديل useSchedule.ts
+- إذا كانت `selectedGroupId === 'all'`:
+  1) نستخدم الجدول العام النشط فقط
+  2) إن لم يوجد: نعرض “المسودة/غير محفوظ” (schedule_id = null)
 
-```typescript
-export function useScheduleEntries(scheduleId?: string | null) {
-  return useQuery({
-    queryKey: ['schedule_entries', scheduleId],
-    queryFn: async () => {
-      let query = supabase
-        .from('schedule_entries')
-        .select(`
-          *,
-          room:rooms(*),
-          time_slot:time_slots(*),
-          subject:subjects(
-            *,
-            professor:professors(*),
-            group:student_groups(*)
-          )
-        `);
-      
-      // فلترة حسب الجدول المحفوظ
-      if (scheduleId) {
-        query = query.eq('schedule_id', scheduleId);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as ScheduleEntry[];
-    },
-  });
-}
-```
+كذلك عند **تفعيل جدول محفوظ خاص بدفعة** (group_id ليس null) سنجعل الصفحة تضبط `selectedGroupId` تلقائياً لتلك الدفعة كي لا يظهر العرض فارغاً بسبب فلتر الدفعات.
 
-### تعديل useSavedSchedules.ts
-
-```typescript
-// في useActivateSchedule - onSuccess
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
-  queryClient.invalidateQueries({ queryKey: ['schedule_entries'] }); // جديد
-  toast({ title: 'تم تفعيل الجدول' });
-},
-```
-
-### تعديل TimetablePage.tsx
-
-```typescript
-// قبل استدعاء useScheduleEntries
-const { data: savedSchedules, isLoading: isLoadingSaved } = useSavedSchedules();
-const activeSchedule = savedSchedules?.find(s => s.is_active);
-
-// تمرير ID الجدول النشط
-const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
-```
+**نتيجة هذا الجزء:** لن يحدث أن تختار الصفحة “جدول نشط” غير مناسب للسياق ويجعل العرض يبدو فارغاً.
 
 ---
 
-## تدفق العمل بعد الإصلاح
+### (B) جعل useScheduleEntries يعرض “المسودة” عند عدم وجود scheduleId بدل خلط كل النسخ
 
-```text
-المستخدم يضغط على جدول محفوظ
-          ↓
-useActivateSchedule يُحدّث is_active في قاعدة البيانات
-          ↓
-invalidateQueries للـ saved_schedules و schedule_entries
-          ↓
-useSavedSchedules يُعيد الجلب → activeSchedule يتغير
-          ↓
-useScheduleEntries يُعيد الجلب بفلتر schedule_id الجديد
-          ↓
-الجدول المعروض يتغير ✓
-```
+حالياً: إذا لم نمرر `scheduleId` فإن الاستعلام يجلب كل `schedule_entries` (بما فيها نسخ محفوظة)، وهذا يسبب خلطاً.
+
+سنعدل `useScheduleEntries(scheduleId)` بحيث:
+- إذا `scheduleId` موجود → `eq('schedule_id', scheduleId)`
+- إذا `scheduleId` غير موجود → `is('schedule_id', null)`  
+  (أي: “اعرض المسودة الحالية غير المحفوظة”)
+
+**نتيجة هذا الجزء:** عندما لا يكون هناك جدول نشط مناسب، نعرض المسودة فقط بدل خلط كل شيء.
 
 ---
 
-## النتيجة المتوقعة
+### (C) إصلاح “التوليد” حتى لا يمسح جداول محفوظة (أهم جزء لمنع الجدول الفارغ)
 
-- عند الضغط على جدول محفوظ، يتم عرض محتواه فوراً
-- كل جدول محفوظ يعرض إدخالاته الخاصة فقط
-- التبديل بين الجداول يعمل بسلاسة
+سنعدل وظيفة “generate-schedule” (backend function) لتدعم **schedule_id** في الطلب، وتصبح عملية الحذف/التوليد مقيدة بهذا الـ schedule_id:
+
+- إدخال جديد في body: `schedule_id?: string | null`
+- عند الحذف قبل إعادة التوليد:
+  - إن كان `schedule_id` موجوداً: احذف فقط صفوف `schedule_entries` التي لها نفس `schedule_id` (ومع `group_id` إن كان محدداً)
+  - إن كان `schedule_id` غير موجود: احذف فقط صفوف `schedule_entries` التي `schedule_id IS NULL` (مسودة) (ومع `group_id` إن كان محدداً)
+
+- عند حساب التعارضات (occupied slots):
+  - إذا كنا نولد لدفعة معينة: نقرأ “المدخلات الموجودة” فقط ضمن **نفس `schedule_id`** (أو المسودة) حتى نتجنب تعارضات داخل نفس النسخة، وليس عبر كل النسخ المحفوظة.
+
+- عند الإدراج:
+  - نضع `schedule_id` = القيمة القادمة (أو null للمسودة)
+
+**نتيجة هذا الجزء:** توليد جدول جديد لن يحذف تاريخ الجداول المحفوظة، وبالتالي عند اختيار جدول محفوظ لن يكون فارغاً بسبب “حذف سابق”.
+
+#### تحسين أمان مهم داخل نفس الخطوة
+بدلاً من إرسال `user_id` من الواجهة، سنجعل الـ backend function تستخرج المستخدم من `Authorization` token (JWT) وتستخدم `user.id`.  
+هذا يمنع أي عميل من تمرير `user_id` مختلف.
+
+(سنُبقي توافقاً مؤقتاً لو احتجنا، لكن الأفضل إزالة `user_id` من body في الواجهة أيضاً.)
+
+---
+
+### (D) تعديل useGenerateSchedule في الواجهة لتمرير schedule_id الصحيح
+
+سنعدل `useGenerateSchedule` ليُرسل:
+- `group_id` (كما الآن)
+- `schedule_id` = الـ `activeSchedule?.id` الذي اخترناه حسب السياق أعلاه  
+  أو `null` إذا كنا في وضع المسودة
+
+وبالتالي عند تفعيل جدول محفوظ ثم توليد جدول جديد: سيتم الكتابة **داخل نفس النسخة** بدل حذف كل شيء.
+
+---
+
+### (E) إصلاح مسح الجدول حتى لا يمسح كل النسخ
+
+`useClearSchedule` حالياً قد يحذف كل شيء (أو كل شيء لدُفعة) بدون `schedule_id`.
+
+سنقيده بـ:
+- إذا كان هناك `activeScheduleId` → احذف داخل هذا `schedule_id` فقط (ومع `group_id` إن كان محدداً)
+- إذا لا يوجد → احذف المسودة فقط (`schedule_id IS NULL`) (ومع `group_id` إن كان محدداً)
+
+**نتيجة هذا الجزء:** زر “مسح” لن يمسح نسخ محفوظة أخرى.
+
+---
+
+### (F) تحسين تجربة المستخدم عند اختيار جدول محفوظ “فارغ”
+
+حتى بعد الإصلاح، قد تكون هناك جداول محفوظة قديمة أصبحت فارغة بالفعل لأن بياناتها مُسحت سابقاً. لا يمكن استرجاعها تلقائياً بشكل مضمون.
+
+سنضيف حالة عرض واضحة في TimetablePage:
+- إذا كانت `scheduleEntries` للجدول النشط = 0:
+  - نظهر رسالة: “هذا الجدول المحفوظ لا يحتوي على محاضرات (قد يكون تم مسحه عند توليد جدول جديد سابقاً).”
+  - ونقترح للمستخدم: إعادة توليد الجدول وحفظه كنسخة جديدة.
+
+---
+
+## الملفات التي سيتم تعديلها
+
+1) `src/pages/TimetablePage.tsx`
+   - منطق اختيار activeSchedule حسب “عام/دفعة”
+   - ضبط selectedGroupId تلقائياً عند تفعيل جدول خاص بدفعة
+   - تمرير schedule_id للـ generate/clear
+
+2) `src/hooks/useSchedule.ts`
+   - تعديل `useScheduleEntries` ليعرض المسودة عند عدم وجود scheduleId
+   - تعديل `useGenerateSchedule` لإرسال schedule_id
+   - تعديل `useClearSchedule` ليحذف ضمن schedule_id/المسودة فقط
+
+3) `supabase/functions/generate-schedule/index.ts` (backend function)
+   - دعم `schedule_id`
+   - حصر delete/select conflicts/insert داخل نفس schedule_id أو المسودة
+   - تحسين الأمان: استخراج user من JWT بدلاً من body.user_id
+
+(قد نحتاج أيضاً تعديل بسيط في `src/hooks/useSavedSchedules.ts` أو في طريقة استدعاء mutate داخل `TimetablePage` لتحديث selectedGroupId بعد تفعيل الجدول.)
+
+---
+
+## سيناريوهات اختبار (مهمة جداً)
+
+1) أنشئ جدولاً محفوظاً لدفعة A، ثم جدولاً محفوظاً لدفعة B  
+   - فعّل جدول A → يجب أن يظهر محتواه  
+   - فعّل جدول B → يجب أن يظهر محتواه  
+   - ارجع لـ A → ما يزال يظهر (ليس فارغاً)
+
+2) فعّل جدول محفوظ (A) ثم اضغط “توليد” لنفس الدفعة  
+   - يجب أن يتغير محتوى جدول A فقط، ولا يتأثر جدول B
+
+3) اضغط “مسح” لدفعة محددة  
+   - يجب أن يمسح فقط محتوى النسخة الحالية (أو المسودة) لهذه الدفعة، وليس كل النسخ
+
+4) حالة جدول محفوظ قديم أصبح فارغاً  
+   - يجب أن ترى رسالة واضحة بدلاً من صمت/فراغ غير مفهوم
+
+---
+
+## ملاحظة عن البيانات الحالية
+
+بما أن المشكلة موجودة منذ فترة، فمن المحتمل أن بعض الجداول المحفوظة القديمة أصبحت فارغة فعلاً بسبب حذف سابق.  
+بعد تطبيق الإصلاح، الجداول الجديدة لن تفقد بياناتها عند التوليد/المسح، لكن الجداول التي فقدت بياناتها سابقاً قد تحتاج “إعادة توليد + حفظ كنسخة جديدة”.
+
