@@ -9,6 +9,7 @@ export interface SavedSchedule {
   group_id: string | null;
   is_active: boolean;
   created_at: string;
+  version: number;
 }
 
 export function useSavedSchedules() {
@@ -36,6 +37,24 @@ export function useSaveSchedule() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('يجب تسجيل الدخول');
 
+      // Calculate the next version number for this group
+      let versionQuery = supabase
+        .from('saved_schedules')
+        .select('version')
+        .eq('user_id', user.id);
+      
+      if (groupId) {
+        versionQuery = versionQuery.eq('group_id', groupId);
+      } else {
+        versionQuery = versionQuery.is('group_id', null);
+      }
+      
+      const { data: existingVersions } = await versionQuery
+        .order('version', { ascending: false })
+        .limit(1);
+      
+      const nextVersion = (existingVersions?.[0]?.version || 0) + 1;
+
       // Deactivate existing active schedules (all of them)
       await supabase
         .from('saved_schedules')
@@ -43,7 +62,7 @@ export function useSaveSchedule() {
         .eq('user_id', user.id)
         .eq('is_active', true);
 
-      // Create new saved schedule
+      // Create new saved schedule with version
       const { data, error } = await supabase
         .from('saved_schedules')
         .insert({
@@ -51,6 +70,7 @@ export function useSaveSchedule() {
           name,
           group_id: groupId || null,
           is_active: true,
+          version: nextVersion,
         })
         .select()
         .single();

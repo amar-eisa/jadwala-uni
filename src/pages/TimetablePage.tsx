@@ -25,7 +25,7 @@ import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePdfExport } from '@/hooks/usePdfExport';
@@ -44,9 +44,8 @@ import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { SaveScheduleDialog } from '@/components/SaveScheduleDialog';
-import { SavedSchedulesMenu } from '@/components/SavedSchedulesMenu';
+import { SavedSchedulesList } from '@/components/SavedSchedulesList';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { DoorOpen } from 'lucide-react';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
@@ -143,8 +142,10 @@ export default function TimetablePage() {
   // Group selection for generation
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
   
+  // Track if we have a draft (unsaved generated schedule)
+  const [hasDraft, setHasDraft] = useState(false);
+  
   // Determine active schedule based on context
-  // Logic: Find the active schedule that matches current context
   const activeSchedule = useMemo(() => {
     if (!savedSchedules) return null;
     
@@ -221,6 +222,7 @@ export default function TimetablePage() {
       // If the schedule is for a specific group, switch to that group
       setSelectedGroupId(schedule.group_id);
     }
+    setHasDraft(false);
     activateSchedule.mutate(scheduleId);
   }, [savedSchedules, activateSchedule]);
 
@@ -364,6 +366,11 @@ export default function TimetablePage() {
       groupId, 
       scheduleId: activeSchedule?.id 
     });
+    setHasDraft(true);
+    toast({
+      title: 'تم إنشاء جدول جديد',
+      description: 'يمكنك حفظه كإصدار جديد أو توليد جدول مختلف',
+    });
   };
 
   const handleClearSchedule = async () => {
@@ -377,6 +384,7 @@ export default function TimetablePage() {
         groupId, 
         scheduleId: activeSchedule?.id 
       });
+      setHasDraft(false);
     }
   };
 
@@ -426,37 +434,28 @@ export default function TimetablePage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">الجدول الأسبوعي</h1>
-            <p className="text-muted-foreground mt-1">اسحب المحاضرات لتعديل مواعيدها</p>
+            <p className="text-muted-foreground mt-1">اختر الدفعة ثم قم بتوليد جدول جديد أو اختر من الجداول المحفوظة</p>
           </div>
         </div>
 
-        {/* Empty Schedule Alert */}
-        {isActiveScheduleEmpty && (
-          <Alert variant="default" className="border-warning/50 bg-warning/10">
-            <AlertCircle className="h-4 w-4 text-warning" />
-            <AlertTitle>الجدول المحفوظ فارغ</AlertTitle>
-            <AlertDescription>
-              هذا الجدول المحفوظ لا يحتوي على محاضرات. قد يكون تم مسحه عند توليد جدول جديد سابقاً.
-              يمكنك إعادة توليد الجدول وحفظه كنسخة جديدة.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Group Selection and Actions */}
-        <Card className="border-0 shadow-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              توليد جدول الدفعة
-            </CardTitle>
-            <CardDescription>
-              اختر الدفعة ثم اضغط توليد لإنشاء جدول منفصل لها
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        {/* Top Section: Generator + Saved Schedules side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Generator Card - takes 1 column */}
+          <Card className="border-0 shadow-card lg:col-span-1">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                توليد جدول جديد
+              </CardTitle>
+              <CardDescription>
+                اختر الدفعة ثم اضغط توليد
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               {/* Group Selector */}
-              <div className="flex-1 w-full sm:max-w-[300px]">
+              <div>
+                <label className="text-sm font-medium mb-2 block">اختر الدفعة</label>
                 <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="اختر الدفعة..." />
@@ -470,25 +469,104 @@ export default function TimetablePage() {
                 </Select>
               </div>
               
-              {/* Action Buttons */}
+              {/* Generate Button */}
+              <Button 
+                onClick={handleGenerateSchedule} 
+                disabled={generateSchedule.isPending || !canGenerate || !isActiveSubscription} 
+                className="w-full gap-2 shadow-lg shadow-primary/25"
+                size="lg"
+              >
+                {generateSchedule.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    جاري التوليد...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-4 w-4" />
+                    توليد جدول جديد
+                  </>
+                )}
+              </Button>
+              
+              {/* Info text */}
+              <p className="text-xs text-muted-foreground text-center">
+                💡 كل ضغطة ستنتج جدولاً مختلفاً
+              </p>
+              
+              {/* Draft indicator */}
+              {hasDraft && (
+                <Alert className="border-warning/50 bg-warning/10">
+                  <FileText className="h-4 w-4 text-warning" />
+                  <AlertTitle className="text-sm">مسودة غير محفوظة</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    تم توليد جدول جديد. احفظه كإصدار جديد أو جرب توليد جدول مختلف.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Saved Schedules - takes 2 columns */}
+          <div className="lg:col-span-2">
+            <SavedSchedulesList
+              schedules={savedSchedules || []}
+              groups={groups || []}
+              isLoading={isLoadingSaved}
+              onActivate={handleActivateSchedule}
+              onDelete={(id) => deleteSavedSchedule.mutate(id)}
+              disabled={!isActiveSubscription}
+            />
+          </div>
+        </div>
+
+        {/* Empty Schedule Alert */}
+        {isActiveScheduleEmpty && !hasDraft && (
+          <Alert variant="default" className="border-warning/50 bg-warning/10">
+            <AlertCircle className="h-4 w-4 text-warning" />
+            <AlertTitle>الجدول المحفوظ فارغ</AlertTitle>
+            <AlertDescription>
+              هذا الجدول المحفوظ لا يحتوي على محاضرات. قد يكون تم مسحه عند توليد جدول جديد سابقاً.
+              يمكنك إعادة توليد الجدول وحفظه كنسخة جديدة.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Actions Bar */}
+        <Card className="border-0 shadow-card">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              {/* Left side: Current context info */}
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="gap-1">
+                  <Users className="h-3 w-3" />
+                  {selectedGroupName}
+                </Badge>
+                {activeSchedule && (
+                  <Badge variant="secondary" className="gap-1">
+                    <FileText className="h-3 w-3" />
+                    {activeSchedule.name}
+                  </Badge>
+                )}
+                {filteredEntries.length > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {filteredEntries.length} محاضرة
+                  </span>
+                )}
+              </div>
+              
+              {/* Right side: Action buttons */}
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Saved Schedules Menu */}
-                <SavedSchedulesMenu
-                  schedules={savedSchedules || []}
-                  isLoading={isLoadingSaved}
-                  onActivate={handleActivateSchedule}
-                  onDelete={(id) => deleteSavedSchedule.mutate(id)}
-                  disabled={!isActiveSubscription}
-                />
-                
                 <Button 
                   variant="outline" 
                   onClick={() => setSaveDialogOpen(true)} 
                   disabled={!filteredEntries?.length || !isActiveSubscription} 
                   className="gap-2"
+                  size="sm"
                 >
                   <Save className="h-4 w-4" />
-                  <span className="hidden sm:inline">حفظ الجدول</span>
+                  <span className="hidden sm:inline">حفظ كإصدار جديد</span>
+                  <span className="sm:hidden">حفظ</span>
                 </Button>
                 
                 <Button 
@@ -496,48 +574,25 @@ export default function TimetablePage() {
                   onClick={handleExportPdf} 
                   disabled={isExporting || !filteredEntries?.length} 
                   className="gap-2"
+                  size="sm"
                 >
                   <FileDown className="h-4 w-4" />
                   <span className="hidden sm:inline">تصدير PDF</span>
+                  <span className="sm:hidden">PDF</span>
                 </Button>
+                
                 <Button 
                   variant="outline" 
                   onClick={handleClearSchedule} 
                   disabled={clearSchedule.isPending || !filteredEntries?.length || !isActiveSubscription} 
                   className="gap-2"
+                  size="sm"
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">مسح {selectedGroupId !== 'all' ? 'جدول الدفعة' : 'الكل'}</span>
-                </Button>
-                <Button 
-                  onClick={handleGenerateSchedule} 
-                  disabled={generateSchedule.isPending || !canGenerate || !isActiveSubscription} 
-                  className="gap-2 shadow-lg shadow-primary/25"
-                >
-                  <Wand2 className="h-4 w-4" />
-                  {generateSchedule.isPending ? 'جاري...' : `توليد ${selectedGroupId !== 'all' ? 'جدول الدفعة' : 'الكل'}`}
+                  <span className="hidden sm:inline">مسح</span>
                 </Button>
               </div>
             </div>
-            
-            {/* Selected Group Info */}
-            {selectedGroupId !== 'all' && (
-              <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">الدفعة المختارة:</span> {selectedGroupName}
-                  {' • '}
-                  <span className="font-medium text-foreground">المواد:</span> {subjects?.filter(s => s.group_id === selectedGroupId).length || 0} مادة
-                  {' • '}
-                  <span className="font-medium text-foreground">المحاضرات المجدولة:</span> {filteredEntries.length} محاضرة
-                  {activeSchedule && (
-                    <>
-                      {' • '}
-                      <span className="font-medium text-foreground">الجدول النشط:</span> {activeSchedule.name}
-                    </>
-                  )}
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -546,7 +601,7 @@ export default function TimetablePage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Filter className="h-4 w-4 text-primary" />
-              تصفية إضافية
+              تصفية الجدول
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -663,7 +718,10 @@ export default function TimetablePage() {
           onSave={(name) => {
             const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
             saveSchedule.mutate({ name, groupId }, {
-              onSuccess: () => setSaveDialogOpen(false),
+              onSuccess: () => {
+                setSaveDialogOpen(false);
+                setHasDraft(false);
+              },
             });
           }}
           isPending={saveSchedule.isPending}

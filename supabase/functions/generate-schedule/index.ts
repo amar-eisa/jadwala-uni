@@ -58,6 +58,16 @@ interface ExistingEntry {
   }[] | null;
 }
 
+// Utility function to shuffle array (Fisher-Yates algorithm)
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -249,14 +259,17 @@ serve(async (req) => {
       sessions: s.sessionsNeeded 
     })));
 
-    // Group time slots by day
-    const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
+    // Group time slots by day - shuffle days for variety
+    const days = shuffleArray(['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']);
     const slotsByDay: Record<string, TimeSlot[]> = {};
     
     for (const day of days) {
-      slotsByDay[day] = timeSlots
-        .filter(s => s.day === day)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+      // Shuffle slots within each day for variety
+      slotsByDay[day] = shuffleArray(
+        timeSlots
+          .filter(s => s.day === day)
+          .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      );
     }
     
     console.log('Slots per day:', Object.entries(slotsByDay).map(([day, slots]) => `${day}: ${slots.length}`));
@@ -278,7 +291,10 @@ serve(async (req) => {
       }
     }
     
-    const totalSessionsNeeded = allSessions.length;
+    // Shuffle sessions for variety - this ensures different order each generation
+    const shuffledSessions = shuffleArray(allSessions);
+    
+    const totalSessionsNeeded = shuffledSessions.length;
     console.log(`Total sessions to schedule: ${totalSessionsNeeded}`);
     
     const targetPerDay = Math.ceil(totalSessionsNeeded / days.length);
@@ -289,7 +305,7 @@ serve(async (req) => {
     
     const subjectScheduledDays: Record<string, Set<string>> = {};
     
-    const sessionQueue = [...allSessions];
+    const sessionQueue = [...shuffledSessions];
     let totalSessionsScheduled = 0;
     
     for (let round = 0; round < 20 && sessionQueue.length > 0; round++) {
