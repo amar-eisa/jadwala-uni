@@ -25,7 +25,7 @@ import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePdfExport } from '@/hooks/usePdfExport';
@@ -145,6 +145,9 @@ export default function TimetablePage() {
   // Track if we have a draft (unsaved generated schedule)
   const [hasDraft, setHasDraft] = useState(false);
   
+  // Track if we're viewing a specific saved schedule (to bypass group filtering)
+  const [viewingScheduleId, setViewingScheduleId] = useState<string | null>(null);
+  
   // Determine active schedule based on context
   const activeSchedule = useMemo(() => {
     if (!savedSchedules) return null;
@@ -217,11 +220,8 @@ export default function TimetablePage() {
 
   // Auto-switch to the group when activating a group-specific schedule
   const handleActivateSchedule = useCallback((scheduleId: string) => {
-    const schedule = savedSchedules?.find(s => s.id === scheduleId);
-    if (schedule?.group_id) {
-      // If the schedule is for a specific group, switch to that group
-      setSelectedGroupId(schedule.group_id);
-    }
+    // Set viewing mode to the saved schedule
+    setViewingScheduleId(scheduleId);
     setHasDraft(false);
     activateSchedule.mutate(scheduleId);
   }, [savedSchedules, activateSchedule]);
@@ -259,8 +259,9 @@ export default function TimetablePage() {
     
     let entries = scheduleEntries;
     
-    // Filter by selected group for display (when a specific group is selected)
-    if (selectedGroupId && selectedGroupId !== 'all') {
+    // Only filter by selected group when NOT viewing a saved schedule
+    // When viewing a saved schedule, show all its entries without group filtering
+    if (!viewingScheduleId && selectedGroupId && selectedGroupId !== 'all') {
       entries = entries.filter((entry) => entry.subject?.group_id === selectedGroupId);
     }
     
@@ -275,7 +276,7 @@ export default function TimetablePage() {
     }
     
     return entries;
-  }, [scheduleEntries, selectedGroupId, filterType, filterId]);
+  }, [scheduleEntries, selectedGroupId, filterType, filterId, viewingScheduleId]);
 
   // Check if active schedule is empty (for showing helpful message)
   const isActiveScheduleEmpty = activeSchedule && scheduleEntries?.length === 0;
@@ -361,6 +362,8 @@ export default function TimetablePage() {
   };
 
   const handleGenerateSchedule = async () => {
+    // Exit viewing mode when generating new schedule
+    setViewingScheduleId(null);
     const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
     await generateSchedule.mutateAsync({ 
       groupId, 
@@ -374,6 +377,8 @@ export default function TimetablePage() {
   };
 
   const handleClearSchedule = async () => {
+    // Exit viewing mode when clearing
+    setViewingScheduleId(null);
     const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
     const groupName = selectedGroupId === 'all' 
       ? 'جميع الجداول' 
@@ -418,7 +423,13 @@ export default function TimetablePage() {
   
   const canGenerate = rooms?.length && selectedGroupHasSubjects && timeSlots?.length;
 
-  // Get selected group name for display
+  // Get viewing schedule details
+  const viewingSchedule = useMemo(() => {
+    if (!viewingScheduleId || !savedSchedules) return null;
+    return savedSchedules.find(s => s.id === viewingScheduleId) || null;
+  }, [viewingScheduleId, savedSchedules]);
+
+  // Get selected group name for display (only when not viewing saved schedule)
   const selectedGroupName = useMemo(() => {
     if (selectedGroupId === 'all') return 'جميع الدفعات';
     return groups?.find(g => g.id === selectedGroupId)?.name || '';
@@ -538,15 +549,26 @@ export default function TimetablePage() {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               {/* Left side: Current context info */}
               <div className="flex items-center gap-3">
-                <Badge variant="outline" className="gap-1">
-                  <Users className="h-3 w-3" />
-                  {selectedGroupName}
-                </Badge>
-                {activeSchedule && (
-                  <Badge variant="secondary" className="gap-1">
-                    <FileText className="h-3 w-3" />
-                    {activeSchedule.name}
+                {viewingScheduleId && viewingSchedule ? (
+                  // Viewing a saved schedule
+                  <Badge variant="default" className="gap-1 bg-primary text-primary-foreground">
+                    <FolderOpen className="h-3 w-3" />
+                    جدول محفوظ: {viewingSchedule.name}
                   </Badge>
+                ) : (
+                  // In generation mode
+                  <>
+                    <Badge variant="outline" className="gap-1">
+                      <Users className="h-3 w-3" />
+                      {selectedGroupName}
+                    </Badge>
+                    {hasDraft && (
+                      <Badge variant="secondary" className="gap-1 bg-warning/20 text-warning border-warning/30">
+                        <FileText className="h-3 w-3" />
+                        مسودة
+                      </Badge>
+                    )}
+                  </>
                 )}
                 {filteredEntries.length > 0 && (
                   <span className="text-sm text-muted-foreground">
@@ -640,7 +662,11 @@ export default function TimetablePage() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <div id="timetable-grid" className="min-w-[900px] p-4 bg-white">
                   {/* Header row with group name for PDF */}
-                  {selectedGroupId !== 'all' && (
+                  {viewingScheduleId && viewingSchedule ? (
+                    <div className="text-center mb-4 pb-2 border-b">
+                      <h2 className="text-xl font-bold text-foreground">{viewingSchedule.name}</h2>
+                    </div>
+                  ) : selectedGroupId !== 'all' && (
                     <div className="text-center mb-4 pb-2 border-b">
                       <h2 className="text-xl font-bold text-foreground">جدول محاضرات دفعة: {selectedGroupName}</h2>
                     </div>
