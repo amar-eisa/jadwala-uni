@@ -78,7 +78,8 @@ export function useSaveSchedule() {
       if (error) throw error;
       
       // Update current DRAFT schedule entries (schedule_id IS NULL) to link to this saved schedule
-      // Only update entries for the specific group if groupId is provided
+      // If groupId is provided, only update entries for that specific group
+      // If groupId is NOT provided (saving for all groups), update ALL draft entries
       let updateQuery = supabase
         .from('schedule_entries')
         .update({ schedule_id: data.id })
@@ -88,6 +89,7 @@ export function useSaveSchedule() {
       if (groupId) {
         updateQuery = updateQuery.eq('group_id', groupId);
       }
+      // Note: When groupId is not provided, we update ALL draft entries (for all groups)
       
       await updateQuery;
       
