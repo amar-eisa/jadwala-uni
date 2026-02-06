@@ -1,85 +1,135 @@
 
-# خطة إصلاح عرض الجداول المحفوظة
+# خطة إرسال تنبيه واتساب عند تسجيل مستخدم جديد
 
-## المشكلة الحالية
+## نظرة عامة
 
-عند اختيار جدول محفوظ (مثل "all" الذي يحتوي على كل الدفعات):
-1. النظام يفعّل الجدول ويجلب محاضراته من قاعدة البيانات ✓
-2. لكن عند العرض، يقوم بفلترة المحاضرات بناءً على `selectedGroupId` المختار في قسم التوليد
-3. إذا كان `selectedGroupId` = دفعة معينة (مثل "2")، سيُخفي كل محاضرات الدفعات الأخرى
+سيتم إنشاء Edge Function جديدة ترسل رسالة واتساب عبر Twilio عند كل عملية تسجيل ناجحة للتنبيه على الرقم المحدد (+96599679479).
 
-## الحل المقترح
+## المتطلبات
 
-فصل منطق "الدفعة المختارة للتوليد" عن "عرض الجدول المحفوظ":
+### 1. حساب Twilio
+ستحتاج إلى:
+- **Account SID**: معرف حسابك في Twilio
+- **Auth Token**: رمز المصادقة
+- **WhatsApp Sender Number**: رقم واتساب المرسل (عادة بصيغة `whatsapp:+14155238886`)
 
-### 1. إضافة state جديد للتحكم في وضع العرض
-
-| الملف | التغيير |
-|-------|---------|
-| `src/pages/TimetablePage.tsx` | إضافة state لتتبع ما إذا كنا نعرض جدول محفوظ |
-
-```typescript
-// State جديد لتحديد ما إذا كان يتم عرض جدول محفوظ
-const [viewingScheduleId, setViewingScheduleId] = useState<string | null>(null);
-```
-
-### 2. تعديل منطق الفلترة
-
-عند عرض جدول محفوظ، لا نطبق فلترة الدفعة:
-
-```typescript
-// قبل
-if (selectedGroupId && selectedGroupId !== 'all') {
-  entries = entries.filter((entry) => entry.subject?.group_id === selectedGroupId);
-}
-
-// بعد
-// لا نفلتر حسب الدفعة إذا كنا نعرض جدولاً محفوظاً
-if (!viewingScheduleId && selectedGroupId && selectedGroupId !== 'all') {
-  entries = entries.filter((entry) => entry.subject?.group_id === selectedGroupId);
-}
-```
-
-### 3. تعديل handleActivateSchedule
-
-عند تفعيل جدول محفوظ، نحفظ ID الجدول ونتجاهل الفلترة:
-
-```typescript
-const handleActivateSchedule = useCallback((scheduleId: string) => {
-  setViewingScheduleId(scheduleId);  // تحديد أننا نعرض جدول محفوظ
-  setHasDraft(false);
-  activateSchedule.mutate(scheduleId);
-}, [activateSchedule]);
-```
-
-### 4. تعديل handleGenerateSchedule
-
-عند توليد جدول جديد، نخرج من وضع "عرض الجدول المحفوظ":
-
-```typescript
-const handleGenerateSchedule = async () => {
-  setViewingScheduleId(null);  // الخروج من وضع عرض الجدول المحفوظ
-  // ... باقي الكود
-};
-```
-
-### 5. تحسين العرض البصري
-
-إظهار معلومات واضحة عن الجدول المعروض:
-
-- إذا كان `viewingScheduleId` موجود: عرض اسم الجدول المحفوظ مع badge "جدول محفوظ"
-- إذا لم يكن موجوداً: عرض الدفعة المختارة للتوليد
+يمكنك الحصول على هذه البيانات من:
+1. اذهب إلى https://console.twilio.com
+2. Account SID و Auth Token موجودان في الصفحة الرئيسية
+3. لتفعيل WhatsApp، اذهب إلى Messaging > Try it out > Send a WhatsApp message
 
 ---
 
-## ملخص التغييرات
+## خطوات التنفيذ
+
+### الخطوة 1: إضافة Secrets لـ Twilio
+
+سنضيف 3 secrets في المشروع:
+
+| Secret | الوصف |
+|--------|-------|
+| `TWILIO_ACCOUNT_SID` | معرف حساب Twilio |
+| `TWILIO_AUTH_TOKEN` | رمز المصادقة |
+| `TWILIO_WHATSAPP_FROM` | رقم المرسل (مثال: `whatsapp:+14155238886`) |
+
+### الخطوة 2: إنشاء Edge Function
+
+سننشئ ملف `supabase/functions/notify-new-user/index.ts`:
+
+```typescript
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const { email, fullName } = await req.json();
+    
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const fromNumber = Deno.env.get('TWILIO_WHATSAPP_FROM');
+    const toNumber = 'whatsapp:+96599679479';
+
+    // إرسال رسالة عبر Twilio WhatsApp API
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          From: fromNumber,
+          To: toNumber,
+          Body: `🔔 طلب تسجيل جديد في جدولة!\n\n👤 الاسم: ${fullName}\n📧 البريد: ${email}\n\nيرجى مراجعة الطلب في لوحة الإدارة.`,
+        }),
+      }
+    );
+
+    const data = await response.json();
+    
+    return new Response(JSON.stringify({ success: true, data }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
+```
+
+### الخطوة 3: تحديث AuthContext.tsx
+
+بعد نجاح التسجيل، نستدعي Edge Function:
+
+```typescript
+// في دالة signUp بعد نجاح التسجيل
+const { error } = await supabase.auth.signUp({...});
+
+if (!error) {
+  // إرسال تنبيه واتساب (بدون انتظار النتيجة)
+  supabase.functions.invoke('notify-new-user', {
+    body: { email, fullName }
+  }).catch(console.error);
+}
+```
+
+---
+
+## ملخص الملفات
 
 | الملف | التغيير |
 |-------|---------|
-| `src/pages/TimetablePage.tsx` | إضافة `viewingScheduleId` state وتعديل منطق الفلترة |
+| `supabase/functions/notify-new-user/index.ts` | إنشاء جديد - Edge Function لإرسال الواتساب |
+| `src/contexts/AuthContext.tsx` | تعديل - استدعاء Edge Function بعد التسجيل |
 
-## السلوك المتوقع بعد التعديل
+---
 
-1. **عند اختيار جدول محفوظ**: يُعرض الجدول كاملاً دون أي فلترة
-2. **عند توليد جدول جديد**: تُطبق الفلترة حسب الدفعة المختارة في قسم التوليد
-3. **عند تغيير الدفعة في قسم التوليد** بينما نعرض جدول محفوظ: يبقى الجدول المحفوظ معروضاً كاملاً (لا تتأثر الفلترة)
+## محتوى رسالة الواتساب
+
+```
+🔔 طلب تسجيل جديد في جدولة!
+
+👤 الاسم: [اسم المستخدم]
+📧 البريد: [البريد الإلكتروني]
+
+يرجى مراجعة الطلب في لوحة الإدارة.
+```
+
+---
+
+## ملاحظات مهمة
+
+1. **Twilio Sandbox**: إذا كنت تستخدم Twilio Sandbox للتجربة، يجب أن يكون الرقم المستلم (+96599679479) قد انضم للـ sandbox أولاً عبر إرسال كلمة "join" لرقم Twilio
+2. **الإنتاج**: للإنتاج، ستحتاج لتسجيل رقم WhatsApp Business مع Twilio
+3. **التكلفة**: Twilio يتقاضى رسوماً لكل رسالة واتساب مرسلة
