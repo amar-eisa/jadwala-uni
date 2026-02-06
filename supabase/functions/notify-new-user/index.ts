@@ -18,7 +18,13 @@ serve(async (req) => {
     
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromNumber = Deno.env.get('TWILIO_WHATSAPP_FROM');
+    let fromNumber = Deno.env.get('TWILIO_WHATSAPP_FROM') || '';
+    
+    // Ensure whatsapp: prefix is present
+    if (!fromNumber.startsWith('whatsapp:')) {
+      fromNumber = `whatsapp:${fromNumber}`;
+    }
+    
     const toNumber = 'whatsapp:+96599679479';
 
     if (!accountSid || !authToken || !fromNumber) {
