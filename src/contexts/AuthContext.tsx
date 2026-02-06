@@ -83,6 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(message) };
       }
       
+      // Send WhatsApp notification (fire and forget)
+      supabase.functions.invoke('notify-new-user', {
+        body: { email, fullName }
+      }).catch((err) => {
+        console.error('Failed to send WhatsApp notification:', err);
+      });
+      
       toast({
         title: 'تم إنشاء الحساب بنجاح',
         description: 'حسابك في انتظار موافقة المدير',
