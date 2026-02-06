@@ -20,6 +20,9 @@ serve(async (req) => {
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     let fromNumber = Deno.env.get('TWILIO_WHATSAPP_FROM') || '';
     
+    // Clean phone number: remove spaces, parentheses, dashes
+    fromNumber = fromNumber.replace(/[\s\(\)\-]/g, '');
+    
     // Ensure whatsapp: prefix is present
     if (!fromNumber.startsWith('whatsapp:')) {
       fromNumber = `whatsapp:${fromNumber}`;
