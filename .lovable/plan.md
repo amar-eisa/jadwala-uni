@@ -1,135 +1,82 @@
 
-# خطة إرسال تنبيه واتساب عند تسجيل مستخدم جديد
+# خطة إصلاح عرض حالة الجدول في لوحة التحكم
 
-## نظرة عامة
+## المشكلة المكتشفة
 
-سيتم إنشاء Edge Function جديدة ترسل رسالة واتساب عبر Twilio عند كل عملية تسجيل ناجحة للتنبيه على الرقم المحدد (+96599679479).
+لوحة التحكم (Dashboard) تعرض "0 محاضرة" لأنها تبحث فقط عن المسودات (drafts) بينما جميع المحاضرات مرتبطة بجدول محفوظ نشط.
 
-## المتطلبات
+### التفاصيل التقنية
 
-### 1. حساب Twilio
-ستحتاج إلى:
-- **Account SID**: معرف حسابك في Twilio
-- **Auth Token**: رمز المصادقة
-- **WhatsApp Sender Number**: رقم واتساب المرسل (عادة بصيغة `whatsapp:+14155238886`)
-
-يمكنك الحصول على هذه البيانات من:
-1. اذهب إلى https://console.twilio.com
-2. Account SID و Auth Token موجودان في الصفحة الرئيسية
-3. لتفعيل WhatsApp، اذهب إلى Messaging > Try it out > Send a WhatsApp message
-
----
-
-## خطوات التنفيذ
-
-### الخطوة 1: إضافة Secrets لـ Twilio
-
-سنضيف 3 secrets في المشروع:
-
-| Secret | الوصف |
-|--------|-------|
-| `TWILIO_ACCOUNT_SID` | معرف حساب Twilio |
-| `TWILIO_AUTH_TOKEN` | رمز المصادقة |
-| `TWILIO_WHATSAPP_FROM` | رقم المرسل (مثال: `whatsapp:+14155238886`) |
-
-### الخطوة 2: إنشاء Edge Function
-
-سننشئ ملف `supabase/functions/notify-new-user/index.ts`:
-
-```typescript
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
-  try {
-    const { email, fullName } = await req.json();
-    
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromNumber = Deno.env.get('TWILIO_WHATSAPP_FROM');
-    const toNumber = 'whatsapp:+96599679479';
-
-    // إرسال رسالة عبر Twilio WhatsApp API
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          From: fromNumber,
-          To: toNumber,
-          Body: `🔔 طلب تسجيل جديد في جدولة!\n\n👤 الاسم: ${fullName}\n📧 البريد: ${email}\n\nيرجى مراجعة الطلب في لوحة الإدارة.`,
-        }),
-      }
-    );
-
-    const data = await response.json();
-    
-    return new Response(JSON.stringify({ success: true, data }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-});
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                      الوضع الحالي                            │
+├─────────────────────────────────────────────────────────────┤
+│  Dashboard يستدعي:                                          │
+│  useScheduleEntries() → بدون scheduleId                     │
+│                        ↓                                    │
+│  يبحث عن: schedule_id IS NULL (المسودات)                    │
+│                        ↓                                    │
+│  النتيجة: 0 محاضرة ❌                                        │
+├─────────────────────────────────────────────────────────────┤
+│  الواقع في قاعدة البيانات:                                  │
+│  13 محاضرة مرتبطة بـ schedule_id = d789da92-...             │
+│  الجدول المحفوظ is_active = true ✓                         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### الخطوة 3: تحديث AuthContext.tsx
+## الحل المقترح
 
-بعد نجاح التسجيل، نستدعي Edge Function:
+تحديث Dashboard ليحصل أولاً على الجدول النشط، ثم يستخدم معرفه لجلب المحاضرات.
 
-```typescript
-// في دالة signUp بعد نجاح التسجيل
-const { error } = await supabase.auth.signUp({...});
-
-if (!error) {
-  // إرسال تنبيه واتساب (بدون انتظار النتيجة)
-  supabase.functions.invoke('notify-new-user', {
-    body: { email, fullName }
-  }).catch(console.error);
-}
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                      الوضع المطلوب                           │
+├─────────────────────────────────────────────────────────────┤
+│  Dashboard يستدعي:                                          │
+│  1. useSavedSchedules() → جلب قائمة الجداول                 │
+│  2. العثور على الجدول النشط (is_active = true)              │
+│  3. useScheduleEntries(activeScheduleId) → جلب المحاضرات   │
+│                        ↓                                    │
+│  النتيجة: 13 محاضرة ✓                                       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## ملخص الملفات
+## الملفات المتأثرة
 
 | الملف | التغيير |
 |-------|---------|
-| `supabase/functions/notify-new-user/index.ts` | إنشاء جديد - Edge Function لإرسال الواتساب |
-| `src/contexts/AuthContext.tsx` | تعديل - استدعاء Edge Function بعد التسجيل |
+| `src/pages/Dashboard.tsx` | إضافة منطق للحصول على الجدول النشط قبل جلب المحاضرات |
 
----
+## التغييرات التفصيلية
 
-## محتوى رسالة الواتساب
+### 1. استيراد useSavedSchedules
 
-```
-🔔 طلب تسجيل جديد في جدولة!
-
-👤 الاسم: [اسم المستخدم]
-📧 البريد: [البريد الإلكتروني]
-
-يرجى مراجعة الطلب في لوحة الإدارة.
+```typescript
+import { useSavedSchedules } from '@/hooks/useSavedSchedules';
 ```
 
----
+### 2. جلب الجدول النشط
 
-## ملاحظات مهمة
+```typescript
+const { data: savedSchedules } = useSavedSchedules();
 
-1. **Twilio Sandbox**: إذا كنت تستخدم Twilio Sandbox للتجربة، يجب أن يكون الرقم المستلم (+96599679479) قد انضم للـ sandbox أولاً عبر إرسال كلمة "join" لرقم Twilio
-2. **الإنتاج**: للإنتاج، ستحتاج لتسجيل رقم WhatsApp Business مع Twilio
-3. **التكلفة**: Twilio يتقاضى رسوماً لكل رسالة واتساب مرسلة
+// Get active schedule ID
+const activeScheduleId = useMemo(() => {
+  if (!savedSchedules) return null;
+  const activeSchedule = savedSchedules.find(s => s.is_active);
+  return activeSchedule?.id || null;
+}, [savedSchedules]);
+
+// Fetch entries for active schedule (or drafts if none)
+const { data: scheduleEntries } = useScheduleEntries(activeScheduleId);
+```
+
+## النتيجة المتوقعة
+
+- حالة الجدول تعرض العدد الصحيح للمحاضرات من الجدول النشط
+- إذا لم يوجد جدول محفوظ نشط، يتم عرض محاضرات المسودة (السلوك الحالي)
+- الإحصائيات في لوحة التحكم تعكس البيانات الفعلية
+
+## ملاحظة
+
+هذا الإصلاح يتوافق مع المنطق المستخدم في `TimetablePage.tsx` الذي يتعامل مع الجداول المحفوظة بنفس الطريقة.
