@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
+import { useSavedSchedules } from '@/hooks/useSavedSchedules';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -29,7 +31,17 @@ export default function Dashboard() {
   const { data: groups } = useStudentGroups();
   const { data: subjects } = useSubjects();
   const { data: timeSlots } = useTimeSlots();
-  const { data: scheduleEntries } = useScheduleEntries();
+  const { data: savedSchedules } = useSavedSchedules();
+
+  // Get active schedule ID
+  const activeScheduleId = useMemo(() => {
+    if (!savedSchedules) return null;
+    const activeSchedule = savedSchedules.find(s => s.is_active);
+    return activeSchedule?.id || null;
+  }, [savedSchedules]);
+
+  // Fetch entries for active schedule (or drafts if none)
+  const { data: scheduleEntries } = useScheduleEntries(activeScheduleId);
 
   const stats = [
     { 
