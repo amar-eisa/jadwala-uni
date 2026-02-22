@@ -5,25 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from '@/components/ui/dialog';
 import { useStudentGroups, useCreateStudentGroup, useUpdateStudentGroup, useDeleteStudentGroup } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2, Users, AlertTriangle, UserCircle } from 'lucide-react';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
+import { motion } from 'framer-motion';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.05 } }
+};
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } }
+};
 
 export default function GroupsPage() {
   const { isActive: isActiveSubscription } = useIsActiveSubscription();
@@ -58,167 +58,110 @@ export default function GroupsPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Subscription Banner */}
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
         <SubscriptionBanner />
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        <motion.div variants={item} className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">إدارة المجموعات</h1>
-            <p className="text-muted-foreground mt-1">إضافة وتعديل وحذف مجموعات الطلاب</p>
+            <h1 className="text-3xl font-bold gradient-text">إدارة المجموعات</h1>
+            <p className="text-muted-foreground mt-1 text-sm">إضافة وتعديل وحذف مجموعات الطلاب</p>
           </div>
           {isActiveSubscription && (
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 shadow-lg shadow-primary/25">
-                  <Plus className="h-4 w-4" />
-                  إضافة مجموعة
-                </Button>
+                <Button className="gap-2 rounded-2xl shadow-lg shadow-primary/20"><Plus className="h-4 w-4" />إضافة مجموعة</Button>
               </DialogTrigger>
-            <DialogContent dir="rtl" className="sm:max-w-md">
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Users className="h-5 w-5 text-primary" />
+              <DialogContent dir="rtl" className="sm:max-w-md">
+                <DialogHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[hsl(262,60%,55%)/0.1] flex items-center justify-center"><Users className="h-5 w-5 text-[hsl(262,60%,50%)]" /></div>
+                    <div><DialogTitle>إضافة مجموعة جديدة</DialogTitle><DialogDescription>أدخل اسم مجموعة الطلاب</DialogDescription></div>
                   </div>
-                  <div>
-                    <DialogTitle>إضافة مجموعة جديدة</DialogTitle>
-                    <DialogDescription>أدخل اسم مجموعة الطلاب</DialogDescription>
-                  </div>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="space-y-2"><Label htmlFor="name">اسم المجموعة</Label><Input id="name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="مثال: المستوى الأول - شعبة أ" className="text-right rounded-xl" /></div>
+                  <Button onClick={handleAdd} disabled={createGroup.isPending || !newName.trim()} className="w-full rounded-xl">{createGroup.isPending ? 'جاري الإضافة...' : 'إضافة'}</Button>
                 </div>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">اسم المجموعة</Label>
-                  <Input
-                    id="name"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="مثال: المستوى الأول - شعبة أ"
-                    className="text-right"
-                  />
-                </div>
-                <Button onClick={handleAdd} disabled={createGroup.isPending || !newName.trim()} className="w-full">
-                  {createGroup.isPending ? 'جاري الإضافة...' : 'إضافة'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
           )}
-        </div>
+        </motion.div>
 
         {/* Summary Card */}
-        <Card className="border-0 shadow-card">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-violet-50">
-                <Users className="h-6 w-6 text-violet-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">إجمالي المجموعات</p>
-                <p className="text-2xl font-bold">{groups?.length || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div variants={item}>
+          <motion.div whileHover={{ y: -3, scale: 1.01 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <Card className="card-glass border-0">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-[hsl(262,60%,55%)/0.1] flex items-center justify-center">
+                    <Users className="h-5 w-5 text-[hsl(262,60%,50%)]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">إجمالي المجموعات</p>
+                    <p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif' }}>{groups?.length || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
         {/* Groups Table */}
-        <Card className="border-0 shadow-card">
-          <CardHeader>
-            <CardTitle>قائمة المجموعات</CardTitle>
-            <CardDescription>جميع مجموعات الطلاب المسجلة في النظام</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
-              </div>
-            ) : groups?.length === 0 ? (
-              <div className="empty-state">
-                <div className="p-4 rounded-full bg-muted mb-4">
-                  <Users className="h-10 w-10 text-muted-foreground" />
+        <motion.div variants={item}>
+          <Card className="card-glass border-0">
+            <CardHeader>
+              <CardTitle className="text-base">قائمة المجموعات</CardTitle>
+              <CardDescription className="text-xs">جميع مجموعات الطلاب المسجلة في النظام</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
+              ) : groups?.length === 0 ? (
+                <div className="card-glass rounded-3xl p-10 text-center space-y-3">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center"><Users className="h-7 w-7 text-muted-foreground" /></div>
+                  <p className="font-semibold">لا توجد مجموعات بعد</p>
+                  <p className="text-sm text-muted-foreground">ابدأ بإضافة مجموعات الطلاب</p>
                 </div>
-                <p className="font-medium">لا توجد مجموعات بعد</p>
-                <p className="text-sm text-muted-foreground">ابدأ بإضافة مجموعات الطلاب</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead>الاسم</TableHead>
-                    <TableHead className="w-[100px]">إجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {groups?.map((group) => (
-                    <TableRow key={group.id} className="table-row-hover">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-violet-50">
-                            <UserCircle className="h-4 w-4 text-violet-500" />
+              ) : (
+                <Table>
+                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>الاسم</TableHead><TableHead className="w-[100px]">إجراءات</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {groups?.map((group) => (
+                      <TableRow key={group.id} className="table-row-hover">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-[hsl(262,60%,55%)/0.1] flex items-center justify-center"><UserCircle className="h-4 w-4 text-[hsl(262,60%,50%)]" /></div>
+                            {group.name}
                           </div>
-                          {group.name}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="icon-button"
-                            onClick={() => setEditingGroup({ id: group.id, name: group.name })}
-                            disabled={!isActiveSubscription}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="icon-button text-destructive hover:text-destructive"
-                            onClick={() => setDeletingGroup({ id: group.id, name: group.name })}
-                            disabled={!isActiveSubscription}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingGroup({ id: group.id, name: group.name })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingGroup({ id: group.id, name: group.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Edit Dialog */}
         <Dialog open={!!editingGroup} onOpenChange={() => setEditingGroup(null)}>
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Pencil className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <DialogTitle>تعديل المجموعة</DialogTitle>
-                  <DialogDescription>قم بتحديث اسم المجموعة</DialogDescription>
-                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Pencil className="h-5 w-5 text-primary" /></div>
+                <div><DialogTitle>تعديل المجموعة</DialogTitle><DialogDescription>قم بتحديث اسم المجموعة</DialogDescription></div>
               </div>
             </DialogHeader>
             {editingGroup && (
               <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">اسم المجموعة</Label>
-                  <Input
-                    id="edit-name"
-                    value={editingGroup.name}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })}
-                    className="text-right"
-                  />
-                </div>
-                <Button onClick={handleUpdate} disabled={updateGroup.isPending} className="w-full">
-                  {updateGroup.isPending ? 'جاري التحديث...' : 'تحديث'}
-                </Button>
+                <div className="space-y-2"><Label htmlFor="edit-name">اسم المجموعة</Label><Input id="edit-name" value={editingGroup.name} onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })} className="text-right rounded-xl" /></div>
+                <Button onClick={handleUpdate} disabled={updateGroup.isPending} className="w-full rounded-xl">{updateGroup.isPending ? 'جاري التحديث...' : 'تحديث'}</Button>
               </div>
             )}
           </DialogContent>
@@ -229,35 +172,22 @@ export default function GroupsPage() {
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-destructive/10">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                </div>
-                <div>
-                  <DialogTitle>تأكيد الحذف</DialogTitle>
-                  <DialogDescription>هل أنت متأكد من حذف هذه المجموعة؟</DialogDescription>
-                </div>
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-destructive" /></div>
+                <div><DialogTitle>تأكيد الحذف</DialogTitle><DialogDescription>هل أنت متأكد من حذف هذه المجموعة؟</DialogDescription></div>
               </div>
             </DialogHeader>
             {deletingGroup && (
               <div className="space-y-4 mt-4">
-                <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20">
-                  <p className="text-sm text-center">
-                    سيتم حذف المجموعة <span className="font-bold">{deletingGroup.name}</span> نهائياً
-                  </p>
-                </div>
+                <div className="p-4 bg-destructive/5 rounded-2xl border border-destructive/20"><p className="text-sm text-center">سيتم حذف المجموعة <span className="font-bold">{deletingGroup.name}</span> نهائياً</p></div>
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setDeletingGroup(null)} className="flex-1">
-                    إلغاء
-                  </Button>
-                  <Button variant="destructive" onClick={handleDelete} disabled={deleteGroup.isPending} className="flex-1">
-                    {deleteGroup.isPending ? 'جاري الحذف...' : 'حذف'}
-                  </Button>
+                  <Button variant="outline" onClick={() => setDeletingGroup(null)} className="flex-1 rounded-xl">إلغاء</Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleteGroup.isPending} className="flex-1 rounded-xl">{deleteGroup.isPending ? 'جاري الحذف...' : 'حذف'}</Button>
                 </div>
               </div>
             )}
           </DialogContent>
         </Dialog>
-      </div>
+      </motion.div>
     </Layout>
   );
 }
