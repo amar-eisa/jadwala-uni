@@ -85,12 +85,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-4 right-4 z-50 w-72 sidebar-glass text-sidebar-foreground rounded-3xl shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col overflow-hidden",
+          "fixed inset-y-4 right-4 z-50 w-72 sidebar-glass text-sidebar-foreground rounded-3xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col overflow-hidden",
           sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
       >
         {/* Logo Header */}
-        <div className="flex flex-col px-6 py-4 border-b border-sidebar-border bg-gradient-to-l from-sidebar-accent/50 to-transparent">
+        <div className="flex flex-col px-6 py-4 border-b border-sidebar-border/30 bg-gradient-to-l from-sidebar-accent/50 to-transparent">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
@@ -129,8 +129,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
+        {/* Glass separator */}
+        <div className="mx-4 h-px bg-gradient-to-l from-transparent via-sidebar-foreground/15 to-transparent" />
+
         {/* Navigation */}
-        <nav className="flex-1 flex flex-col gap-1.5 p-4 overflow-y-auto">
+        <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
           <LayoutGroup>
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
@@ -148,17 +151,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
                   )}
                 >
-                  {/* Sliding pill background */}
+                  {/* Sliding pill background with glow */}
                   {isActive && (
                     <motion.div
                       layoutId="nav-pill"
-                      className="absolute inset-0 bg-primary rounded-2xl shadow-lg shadow-primary/25"
+                      className="absolute inset-0 bg-primary rounded-2xl nav-glow"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
                   {!isActive && (
                     <motion.div
-                      className="absolute inset-0 rounded-2xl bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      className="absolute inset-0 rounded-2xl bg-sidebar-accent/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      layoutId={undefined}
                     />
                   )}
                   <div className="relative z-10 flex items-center gap-3">
