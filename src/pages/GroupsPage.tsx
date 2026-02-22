@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { useStudentGroups, useCreateStudentGroup, useUpdateStudentGroup, useDeleteStudentGroup } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2, Users, AlertTriangle, UserCircle } from 'lucide-react';
+import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -117,11 +118,11 @@ export default function GroupsPage() {
               {isLoading ? (
                 <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
               ) : groups?.length === 0 ? (
-                <div className="card-glass rounded-3xl p-10 text-center space-y-3">
-                  <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center"><Users className="h-7 w-7 text-muted-foreground" /></div>
-                  <p className="font-semibold">لا توجد مجموعات بعد</p>
-                  <p className="text-sm text-muted-foreground">ابدأ بإضافة مجموعات الطلاب</p>
-                </div>
+                <EmptyStateIllustration
+                  type="groups"
+                  title="لا توجد مجموعات بعد"
+                  description="ابدأ بإضافة مجموعات الطلاب لتنظيم الجداول حسب الدفعات"
+                />
               ) : (
                 <Table>
                   <TableHeader><TableRow className="hover:bg-transparent"><TableHead>الاسم</TableHead><TableHead className="w-[100px]">إجراءات</TableHead></TableRow></TableHeader>

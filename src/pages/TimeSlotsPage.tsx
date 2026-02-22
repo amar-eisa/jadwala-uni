@@ -17,6 +17,7 @@ import {
 import { useTimeSlots, useCreateTimeSlot, useDeleteTimeSlot } from '@/hooks/useTimeSlots';
 import { DayOfWeek, DAY_LABELS } from '@/types/database';
 import { Plus, Trash2, Clock, Calendar, Settings, RotateCcw, Loader2 } from 'lucide-react';
+import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
 import { TimeSlot } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
@@ -287,13 +288,11 @@ export default function TimeSlotsPage() {
                   <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
                 </div>
               ) : uniqueTimeRanges.length === 0 ? (
-                <div className="empty-state py-12">
-                  <div className="p-4 rounded-full bg-muted mb-4">
-                    <Clock className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                  <p className="font-medium">لا توجد فترات زمنية بعد</p>
-                  <p className="text-sm text-muted-foreground">ابدأ بإضافة الفترات الزمنية للمحاضرات</p>
-                </div>
+                <EmptyStateIllustration
+                  type="timeSlots"
+                  title="لا توجد فترات زمنية بعد"
+                  description="ابدأ بإضافة الفترات الزمنية لتحديد أوقات المحاضرات المتاحة"
+                />
               ) : (
                 <Table>
                   <TableHeader>

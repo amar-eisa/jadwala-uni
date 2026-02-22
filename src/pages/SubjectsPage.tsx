@@ -20,6 +20,7 @@ import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2, BookOpen, AlertTriangle, FlaskConical, FileText, Clock } from 'lucide-react';
 import { SubjectType, SUBJECT_TYPE_LABELS } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -190,11 +191,11 @@ export default function SubjectsPage() {
               {isLoading ? (
                 <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
               ) : subjects?.length === 0 ? (
-                <div className="card-glass rounded-3xl p-10 text-center space-y-3">
-                  <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center"><BookOpen className="h-7 w-7 text-muted-foreground" /></div>
-                  <p className="font-semibold">لا توجد مواد بعد</p>
-                  <p className="text-sm text-muted-foreground">ابدأ بإضافة المواد الدراسية</p>
-                </div>
+                <EmptyStateIllustration
+                  type="subjects"
+                  title="لا توجد مواد بعد"
+                  description="ابدأ بإضافة المواد الدراسية وربطها بالدكاترة والمجموعات"
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
