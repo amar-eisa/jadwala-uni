@@ -113,11 +113,29 @@ export default function Dashboard() {
   const totalSlots = (rooms?.length || 1) * (timeSlots?.length || 1);
   const utilizationRate = totalSlots > 0 ? Math.round((totalLectures / totalSlots) * 100) : 0;
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.05 }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } }
+  };
+
   return (
     <Layout>
-      <div className="space-y-10">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="space-y-10"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <motion.div variants={item} className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold gradient-text">
               لوحة التحكم
@@ -132,10 +150,10 @@ export default function Dashboard() {
               </Link>
             </Button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-5">
+        <motion.div variants={item} className="grid gap-5 md:grid-cols-2 lg:grid-cols-5">
           {stats.map((stat, index) => (
             <Link to={stat.href} key={stat.name}>
               <MotionCard
@@ -182,10 +200,10 @@ export default function Dashboard() {
               </MotionCard>
             </Link>
           ))}
-        </div>
+        </motion.div>
 
         {/* Setup Progress / System Statistics & Schedule Status */}
-        <div className="grid gap-8 lg:grid-cols-2">
+        <motion.div variants={item} className="grid gap-8 lg:grid-cols-2">
           {isSetupComplete ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <Card className="card-soft border-0 overflow-hidden">
@@ -380,14 +398,10 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </motion.div>
-        </div>
+        </motion.div>
 
         {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <motion.div variants={item}>
           <Card className="card-soft border-0">
             <CardHeader>
               <CardTitle>إجراءات سريعة</CardTitle>
@@ -421,7 +435,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </motion.div>
-      </div>
+      </motion.div>
     </Layout>
   );
 }

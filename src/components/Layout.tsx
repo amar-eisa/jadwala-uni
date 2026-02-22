@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { 
   LayoutDashboard, 
   DoorOpen, 
@@ -129,47 +130,62 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
-            const count = item.countKey ? counts[item.countKey] : null;
-            
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 group",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "p-2 rounded-lg transition-colors",
-                    isActive 
-                      ? "bg-primary-foreground/20" 
-                      : "bg-sidebar-accent group-hover:bg-sidebar-accent"
-                  )}>
-                    <item.icon className="h-4 w-4" />
+        <nav className="flex-1 flex flex-col gap-1.5 p-4 overflow-y-auto">
+          <LayoutGroup>
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.href;
+              const count = item.countKey ? counts[item.countKey] : null;
+              
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "relative flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition-colors duration-200 group",
+                    isActive
+                      ? "text-primary-foreground"
+                      : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
+                  )}
+                >
+                  {/* Sliding pill background */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="absolute inset-0 bg-primary rounded-2xl shadow-lg shadow-primary/25"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  {!isActive && (
+                    <motion.div
+                      className="absolute inset-0 rounded-2xl bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    />
+                  )}
+                  <div className="relative z-10 flex items-center gap-3">
+                    <div className={cn(
+                      "p-2 rounded-xl transition-colors",
+                      isActive 
+                        ? "bg-primary-foreground/20" 
+                        : "bg-sidebar-accent group-hover:bg-sidebar-accent"
+                    )}>
+                      <item.icon className="h-4 w-4" />
+                    </div>
+                    <span>{item.name}</span>
                   </div>
-                  <span>{item.name}</span>
-                </div>
-                {count !== null && count > 0 && (
-                  <span className={cn(
-                    "px-2 py-0.5 text-xs rounded-full font-medium",
-                    isActive 
-                      ? "bg-primary-foreground/20 text-primary-foreground" 
-                      : "bg-sidebar-accent text-sidebar-foreground/70"
-                  )}>
-                    {count}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+                  {count !== null && count > 0 && (
+                    <span className={cn(
+                      "relative z-10 px-2 py-0.5 text-xs rounded-full font-medium",
+                      isActive 
+                        ? "bg-primary-foreground/20 text-primary-foreground" 
+                        : "bg-sidebar-accent text-sidebar-foreground/70"
+                    )}>
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </LayoutGroup>
         </nav>
 
         {/* User Info & Sign Out */}
