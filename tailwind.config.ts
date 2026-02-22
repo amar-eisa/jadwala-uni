@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Tajawal', 'sans-serif'],
+        sans: ['Cairo', 'Tajawal', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -82,15 +82,20 @@ export default {
         },
       },
       borderRadius: {
+        '3xl': 'calc(var(--radius) + 8px)',
+        '2xl': 'calc(var(--radius) + 4px)',
+        xl: 'calc(var(--radius) + 2px)',
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        'elegant': '0 4px 20px -2px rgba(0, 0, 0, 0.1)',
-        'card': '0 2px 12px -2px rgba(0, 0, 0, 0.08)',
-        'card-hover': '0 8px 30px -4px rgba(0, 0, 0, 0.12)',
-        'stat': '0 4px 24px -4px rgba(59, 130, 246, 0.15)',
+        'soft': '6px 6px 16px hsl(213 30% 88% / 0.5), -4px -4px 12px hsl(0 0% 100% / 0.7)',
+        'soft-hover': '8px 8px 24px hsl(213 30% 85% / 0.6), -6px -6px 16px hsl(0 0% 100% / 0.8)',
+        'elegant': '0 4px 20px -2px rgba(0, 0, 0, 0.08)',
+        'card': '0 2px 12px -2px rgba(0, 0, 0, 0.06)',
+        'card-hover': '0 8px 30px -4px rgba(0, 0, 0, 0.1)',
+        'stat': '0 4px 24px -4px hsl(197 80% 55% / 0.15)',
       },
       keyframes: {
         "accordion-down": {

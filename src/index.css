@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
     --background: 200 20% 98%;
@@ -41,22 +37,21 @@ All colors MUST be HSL.
     --info: 197 80% 55%;
     --info-foreground: 0 0% 100%;
 
-    --border: 200 25% 90%;
-    --input: 200 25% 90%;
+    --border: 200 20% 92%;
+    --input: 200 20% 92%;
     --ring: 197 80% 55%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 213 53% 18%;
+    --sidebar-background: 213 53% 16%;
     --sidebar-foreground: 200 20% 98%;
     --sidebar-primary: 197 80% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 213 45% 26%;
+    --sidebar-accent: 213 45% 22%;
     --sidebar-accent-foreground: 200 20% 98%;
-    --sidebar-border: 213 45% 30%;
+    --sidebar-border: 213 40% 24%;
     --sidebar-ring: 197 80% 55%;
 
-    /* Group colors for timetable */
     --group-1: 197 80% 55%;
     --group-2: 160 72% 38%;
     --group-3: 262 60% 55%;
@@ -120,23 +115,61 @@ All colors MUST be HSL.
   }
 
   html, body {
-    @apply bg-background text-foreground;
-    font-family: 'Tajawal', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Cairo', 'Tajawal', sans-serif;
+    line-height: 1.8;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  p {
+    line-height: 1.9;
   }
 }
 
 @layer components {
+  .card-soft {
+    @apply rounded-3xl border border-border/40 bg-card/80 backdrop-blur-sm;
+    box-shadow:
+      6px 6px 16px hsl(213 30% 88% / 0.5),
+      -4px -4px 12px hsl(0 0% 100% / 0.7);
+  }
+
+  .dark .card-soft {
+    box-shadow:
+      6px 6px 16px hsl(213 50% 4% / 0.6),
+      -4px -4px 12px hsl(213 40% 14% / 0.3);
+  }
+
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:-translate-y-1;
+  }
+
+  .card-hover:hover {
+    box-shadow:
+      8px 8px 24px hsl(213 30% 85% / 0.6),
+      -6px -6px 16px hsl(0 0% 100% / 0.8);
+  }
+
+  .dark .card-hover:hover {
+    box-shadow:
+      8px 8px 24px hsl(213 50% 3% / 0.7),
+      -6px -6px 16px hsl(213 40% 16% / 0.4);
   }
 
   .stat-card {
-    @apply relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+    @apply relative overflow-hidden rounded-3xl border border-border/30 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1;
+    box-shadow:
+      6px 6px 16px hsl(213 30% 88% / 0.5),
+      -4px -4px 12px hsl(0 0% 100% / 0.7);
   }
 
   .stat-card::before {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity duration-300;
+    @apply absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity duration-300 rounded-3xl;
   }
 
   .stat-card:hover::before {
@@ -144,15 +177,15 @@ All colors MUST be HSL.
   }
 
   .table-row-hover {
-    @apply transition-colors duration-200 hover:bg-muted/60;
+    @apply transition-colors duration-200 hover:bg-muted/40;
   }
 
   .icon-button {
-    @apply transition-all duration-200 hover:scale-110 hover:bg-muted;
+    @apply transition-all duration-200 hover:scale-110 hover:bg-muted rounded-2xl;
   }
 
   .nav-item {
-    @apply transition-all duration-200 relative;
+    @apply transition-all duration-200 relative rounded-2xl;
   }
 
   .nav-item.active {
@@ -169,27 +202,27 @@ All colors MUST be HSL.
   }
 
   .empty-state {
-    @apply flex flex-col items-center justify-center py-12 text-muted-foreground;
+    @apply flex flex-col items-center justify-center py-16 text-muted-foreground;
   }
 
   .badge-lecture {
-    @apply bg-primary/10 text-primary border-primary/20;
+    @apply bg-primary/10 text-primary border-primary/20 rounded-xl;
   }
 
   .badge-lab {
-    @apply bg-success/10 text-success border-success/20;
+    @apply bg-success/10 text-success border-success/20 rounded-xl;
   }
 
   .badge-theory {
-    @apply bg-info/10 text-info border-info/20;
+    @apply bg-info/10 text-info border-info/20 rounded-xl;
   }
 
   .badge-practical {
-    @apply bg-warning/10 text-warning border-warning/20;
+    @apply bg-warning/10 text-warning border-warning/20 rounded-xl;
   }
 
   .timetable-cell {
-    @apply transition-all duration-200 rounded-lg border border-transparent;
+    @apply transition-all duration-200 rounded-2xl border border-transparent;
   }
 
   .timetable-cell:hover {
@@ -197,10 +230,14 @@ All colors MUST be HSL.
   }
 
   .lecture-card {
-    @apply rounded-xl border-2 shadow-sm transition-all duration-300;
+    @apply rounded-2xl border-2 shadow-sm transition-all duration-300;
   }
 
   .lecture-card:hover {
     @apply shadow-md -translate-y-0.5;
+  }
+
+  .sidebar-glass {
+    @apply backdrop-blur-xl bg-sidebar/95 border-l border-sidebar-border/50;
   }
 }

@@ -84,7 +84,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-72 bg-sidebar text-sidebar-foreground border-l border-sidebar-border shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col",
+          "fixed inset-y-0 right-0 z-50 w-72 sidebar-glass text-sidebar-foreground shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col",
           sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
       >
@@ -222,7 +222,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="p-6 lg:p-8 animate-fade-in">{children}</main>
+        <main className="p-8 lg:p-10 animate-fade-in">{children}</main>
       </div>
     </div>
   );
