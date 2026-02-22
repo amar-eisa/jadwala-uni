@@ -14,6 +14,7 @@ import { useProfessors, useCreateProfessor, useUpdateProfessor, useDeleteProfess
 import { Plus, Pencil, Trash2, CalendarOff, GraduationCap, AlertTriangle, User } from 'lucide-react';
 import { ProfessorUnavailabilityDialog } from '@/components/ProfessorUnavailabilityDialog';
 import { cn } from '@/lib/utils';
+import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -120,11 +121,11 @@ export default function ProfessorsPage() {
               {isLoading ? (
                 <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
               ) : professors?.length === 0 ? (
-                <div className="card-glass rounded-3xl p-10 text-center space-y-3">
-                  <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center"><GraduationCap className="h-7 w-7 text-muted-foreground" /></div>
-                  <p className="font-semibold">لا يوجد دكاترة بعد</p>
-                  <p className="text-sm text-muted-foreground">ابدأ بإضافة أعضاء هيئة التدريس</p>
-                </div>
+                <EmptyStateIllustration
+                  type="professors"
+                  title="لا يوجد دكاترة بعد"
+                  description="ابدأ بإضافة أعضاء هيئة التدريس لربطهم بالمواد الدراسية"
+                />
               ) : (
                 <Table>
                   <TableHeader><TableRow className="hover:bg-transparent"><TableHead>الاسم</TableHead><TableHead className="w-[180px]">إجراءات</TableHead></TableRow></TableHeader>

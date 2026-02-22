@@ -18,6 +18,7 @@ import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/u
 import { RoomType, ROOM_TYPE_LABELS } from '@/types/database';
 import { Plus, Pencil, Trash2, DoorOpen, FlaskConical, Presentation, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -158,13 +159,11 @@ export default function RoomsPage() {
                   <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
                 </div>
               ) : rooms?.length === 0 ? (
-                <div className="card-glass rounded-3xl p-10 text-center space-y-3">
-                  <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                    <DoorOpen className="h-7 w-7 text-muted-foreground" />
-                  </div>
-                  <p className="font-semibold">لا توجد قاعات بعد</p>
-                  <p className="text-sm text-muted-foreground">ابدأ بإضافة القاعات والمعامل</p>
-                </div>
+                <EmptyStateIllustration
+                  type="rooms"
+                  title="لا توجد قاعات بعد"
+                  description="ابدأ بإضافة القاعات والمعامل لتنظيم جداولك الدراسية"
+                />
               ) : (
                 <Table>
                   <TableHeader>
