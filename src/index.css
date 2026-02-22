@@ -346,4 +346,121 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
+
+  /* Shimmer button effect */
+  .shimmer-button {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 100% / 0.15) 50%,
+      transparent 100%
+    );
+    transition: none;
+  }
+
+  .shimmer-button:hover::after {
+    animation: shimmer-slide 0.6s ease-out forwards;
+  }
+
+  @keyframes shimmer-slide {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+
+  /* Enhanced table styles */
+  .table-enhanced {
+    @apply overflow-hidden rounded-2xl border border-border/40;
+  }
+
+  .table-enhanced thead tr {
+    @apply bg-gradient-to-l from-muted/60 to-muted/30;
+  }
+
+  .table-enhanced thead th {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 border-b border-border/50;
+  }
+
+  .table-enhanced tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  .table-enhanced tbody tr:hover {
+    @apply bg-muted/30;
+  }
+
+  .table-enhanced tbody tr:not(:last-child) td {
+    @apply border-b border-border/20;
+  }
+
+  /* Row number styling */
+  .row-number {
+    @apply w-7 h-7 rounded-lg bg-muted/60 flex items-center justify-center text-xs font-bold text-muted-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Dialog animations */
+  [data-state="open"][role="dialog"] {
+    animation: dialog-enter 0.25s ease-out;
+  }
+
+  @keyframes dialog-enter {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.94);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  /* Skeleton loading cards */
+  .skeleton-row {
+    @apply flex items-center gap-4 p-4;
+  }
+
+  .skeleton-circle {
+    @apply w-8 h-8 rounded-full bg-muted animate-pulse;
+  }
+
+  .skeleton-line {
+    @apply h-4 rounded-lg bg-muted animate-pulse;
+  }
+
+  .skeleton-line-short {
+    @apply w-24 h-4 rounded-lg bg-muted animate-pulse;
+  }
+
+  .skeleton-line-medium {
+    @apply w-40 h-4 rounded-lg bg-muted animate-pulse;
+  }
+
+  /* Dashed border animation for upload */
+  @keyframes dash-rotate {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 24; }
+  }
+
+  .upload-zone {
+    @apply relative rounded-2xl border-2 border-dashed border-muted-foreground/20 transition-all duration-300;
+  }
+
+  .upload-zone:hover {
+    @apply border-primary/40 bg-primary/5;
+  }
+
+  .upload-zone.drag-over {
+    @apply border-primary bg-primary/10 scale-[1.02];
+  }
 }

@@ -282,10 +282,17 @@ export default function TimeSlotsPage() {
             )}
 
             {/* Existing Slots Table */}
-            <div className="border rounded-xl overflow-hidden">
+            <div className="table-enhanced">
               {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
+                <div className="space-y-1 p-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="skeleton-row">
+                      <div className="skeleton-circle" />
+                      <div className="skeleton-line-short" />
+                      <div className="skeleton-line-short" />
+                      <div className="skeleton-line-short" />
+                    </div>
+                  ))}
                 </div>
               ) : uniqueTimeRanges.length === 0 ? (
                 <EmptyStateIllustration
@@ -296,7 +303,8 @@ export default function TimeSlotsPage() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="hover:bg-transparent bg-muted/50">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[50px]">#</TableHead>
                       <TableHead className="text-right">الفترة</TableHead>
                       <TableHead className="text-center">وقت البداية</TableHead>
                       <TableHead className="text-center">وقت النهاية</TableHead>
@@ -314,14 +322,10 @@ export default function TimeSlotsPage() {
                       const durationMinutes = endMinutes - startMinutes;
                       
                       return (
-                        <TableRow key={slot.id} className="table-row-hover">
+                        <TableRow key={slot.id}>
+                          <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-medium text-right">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                                {index + 1}
-                              </div>
-                              الفترة {index + 1}
-                            </div>
+                            الفترة {index + 1}
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge variant="outline" className="font-mono text-sm">

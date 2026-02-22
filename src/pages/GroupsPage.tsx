@@ -116,7 +116,15 @@ export default function GroupsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
+                <div className="space-y-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="skeleton-row">
+                      <div className="skeleton-circle" />
+                      <div className="skeleton-line-medium flex-1" />
+                      <div className="skeleton-line-short" />
+                    </div>
+                  ))}
+                </div>
               ) : groups?.length === 0 ? (
                 <EmptyStateIllustration
                   type="groups"
@@ -124,27 +132,30 @@ export default function GroupsPage() {
                   description="ابدأ بإضافة مجموعات الطلاب لتنظيم الجداول حسب الدفعات"
                 />
               ) : (
-                <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>الاسم</TableHead><TableHead className="w-[100px]">إجراءات</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {groups?.map((group) => (
-                      <TableRow key={group.id} className="table-row-hover">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-[hsl(262,60%,55%)/0.1] flex items-center justify-center"><UserCircle className="h-4 w-4 text-[hsl(262,60%,50%)]" /></div>
-                            {group.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingGroup({ id: group.id, name: group.name })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingGroup({ id: group.id, name: group.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="table-enhanced">
+                  <Table>
+                    <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-[50px]">#</TableHead><TableHead>الاسم</TableHead><TableHead className="w-[100px]">إجراءات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {groups?.map((group, index) => (
+                        <TableRow key={group.id}>
+                          <TableCell><div className="row-number">{index + 1}</div></TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-[hsl(262,60%,55%)/0.1] flex items-center justify-center"><UserCircle className="h-4 w-4 text-[hsl(262,60%,50%)]" /></div>
+                              {group.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingGroup({ id: group.id, name: group.name })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingGroup({ id: group.id, name: group.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

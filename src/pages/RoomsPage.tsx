@@ -155,8 +155,14 @@ export default function RoomsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
+                <div className="space-y-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="skeleton-row">
+                      <div className="skeleton-circle" />
+                      <div className="skeleton-line-medium flex-1" />
+                      <div className="skeleton-line-short" />
+                    </div>
+                  ))}
                 </div>
               ) : rooms?.length === 0 ? (
                 <EmptyStateIllustration
@@ -165,40 +171,44 @@ export default function RoomsPage() {
                   description="ابدأ بإضافة القاعات والمعامل لتنظيم جداولك الدراسية"
                 />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>الاسم</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead className="w-[100px]">إجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rooms?.map((room) => (
-                      <TableRow key={room.id} className="table-row-hover">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", room.type === 'lecture' ? 'bg-primary/10' : 'bg-success/10')}>
-                              {room.type === 'lecture' ? <Presentation className="h-4 w-4 text-primary" /> : <FlaskConical className="h-4 w-4 text-success" />}
-                            </div>
-                            {room.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={cn("font-medium rounded-xl", room.type === 'lecture' ? 'badge-lecture' : 'badge-lab')}>
-                            {ROOM_TYPE_LABELS[room.type]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingRoom({ id: room.id, name: room.name, type: room.type })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingRoom({ id: room.id, name: room.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                        </TableCell>
+                <div className="table-enhanced">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[50px]">#</TableHead>
+                        <TableHead>الاسم</TableHead>
+                        <TableHead>النوع</TableHead>
+                        <TableHead className="w-[100px]">إجراءات</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {rooms?.map((room, index) => (
+                        <TableRow key={room.id}>
+                          <TableCell><div className="row-number">{index + 1}</div></TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-3">
+                              <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", room.type === 'lecture' ? 'bg-primary/10' : 'bg-success/10')}>
+                                {room.type === 'lecture' ? <Presentation className="h-4 w-4 text-primary" /> : <FlaskConical className="h-4 w-4 text-success" />}
+                              </div>
+                              {room.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("font-medium rounded-xl", room.type === 'lecture' ? 'badge-lecture' : 'badge-lab')}>
+                              {ROOM_TYPE_LABELS[room.type]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingRoom({ id: room.id, name: room.name, type: room.type })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingRoom({ id: room.id, name: room.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

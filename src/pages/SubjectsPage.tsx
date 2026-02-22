@@ -189,7 +189,16 @@ export default function SubjectsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
+                <div className="space-y-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="skeleton-row">
+                      <div className="skeleton-circle" />
+                      <div className="skeleton-line-medium flex-1" />
+                      <div className="skeleton-line-short" />
+                      <div className="skeleton-line-short" />
+                    </div>
+                  ))}
+                </div>
               ) : subjects?.length === 0 ? (
                 <EmptyStateIllustration
                   type="subjects"
@@ -197,18 +206,20 @@ export default function SubjectsPage() {
                   description="ابدأ بإضافة المواد الدراسية وربطها بالدكاترة والمجموعات"
                 />
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto table-enhanced">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[50px]">#</TableHead>
                         <TableHead>الكود</TableHead><TableHead>الاسم</TableHead><TableHead>النوع</TableHead>
                         <TableHead>الساعات</TableHead><TableHead>الدكتور</TableHead><TableHead>المجموعة</TableHead>
                         <TableHead className="w-[100px]">إجراءات</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subjects?.map((subject) => (
-                        <TableRow key={subject.id} className="table-row-hover">
+                      {subjects?.map((subject, index) => (
+                        <TableRow key={subject.id}>
+                          <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-mono text-sm"><Badge variant="outline" className="font-mono rounded-xl">{subject.code}</Badge></TableCell>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
