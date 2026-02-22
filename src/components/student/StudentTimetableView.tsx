@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { DayOfWeek, DAY_LABELS } from '@/types/database';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { RichTooltip } from '@/components/ui/rich-tooltip';
+import { GraduationCap, MapPin, BookOpen } from 'lucide-react';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
@@ -107,15 +109,43 @@ export function StudentTimetableView({ entries, timeSlots, groupName }: Props) {
                       {cellEntries.map((entry) => {
                         const isLab = entry.subject?.type === 'practical';
                         return (
-                          <div
+                          <RichTooltip
                             key={entry.id}
+                            content={
+                              <div className="space-y-3 text-sm" dir="rtl">
+                                <div className="font-bold text-foreground text-base border-b border-border/30 pb-2">
+                                  {entry.subject?.name}
+                                </div>
+                                <div className="space-y-2 text-muted-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
+                                    <span>{entry.subject?.professor?.name || 'غير محدد'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                                    <span>{entry.room?.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+                                    <Badge variant="outline" className="text-[10px]">{isLab ? 'عملي' : 'نظري'}</Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            }
+                          >
+                          <div
                             className={cn(
-                              "rounded-2xl p-3 min-h-[90px] border-2",
+                              "rounded-2xl p-3 min-h-[90px] border-2 relative overflow-hidden cursor-default",
                               isLab
                                 ? "bg-success/10 border-success/30"
                                 : "bg-primary/10 border-primary/30"
                             )}
                           >
+                            {/* Side color strip */}
+                            <div className={cn(
+                              "absolute top-0 right-0 w-1 h-full rounded-r-2xl",
+                              isLab ? "bg-success" : "bg-primary"
+                            )} />
                             <div className="font-bold text-sm text-center text-foreground mb-1">
                               {entry.subject?.name}
                             </div>
@@ -131,6 +161,7 @@ export function StudentTimetableView({ entries, timeSlots, groupName }: Props) {
                               </Badge>
                             </div>
                           </div>
+                          </RichTooltip>
                         );
                       })}
                     </td>

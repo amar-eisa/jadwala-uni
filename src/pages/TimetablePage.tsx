@@ -26,7 +26,8 @@ import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen, FolderOpen } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen, FolderOpen, BookOpen, GraduationCap, MapPin } from 'lucide-react';
+import { RichTooltip } from '@/components/ui/rich-tooltip';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePdfExport } from '@/hooks/usePdfExport';
@@ -73,42 +74,79 @@ function DraggableEntry({ entry, colors }: { entry: ScheduleEntry; colors: typeo
   } : undefined;
 
   const groupName = entry.subject?.group?.name;
+  const isLab = entry.subject?.type === 'practical';
 
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "lecture-card p-3 min-h-[100px] cursor-grab active:cursor-grabbing",
-        colors.bg,
-        colors.border,
-        isDragging && "opacity-50 shadow-xl ring-2 ring-primary"
-      )}
-      {...listeners}
-      {...attributes}
-    >
-      <div className="flex items-center justify-center gap-1 mb-2 text-muted-foreground">
-        <GripVertical className="h-3 w-3" />
-        <span className="text-[10px]">اسحب للنقل</span>
-      </div>
-      
-      <div className="font-bold text-sm text-center text-foreground mb-1 line-clamp-2">
+  const tooltipContent = (
+    <div className="space-y-3 text-sm" dir="rtl">
+      <div className="font-bold text-foreground text-base border-b border-border/30 pb-2">
         {entry.subject?.name}
       </div>
-      
-      <div className={cn("text-xs text-center mb-2", colors.text)}>
-        {entry.subject?.professor?.name}
-      </div>
-      
-      <div className="flex items-center justify-center gap-2 flex-wrap">
+      <div className="space-y-2 text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span>{entry.subject?.professor?.name || 'غير محدد'}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span>{entry.room?.name} ({entry.room?.type === 'lab' ? 'معمل' : 'قاعة'})</span>
+        </div>
         {groupName && (
-          <Badge className={cn("text-[10px] font-medium px-2 py-0.5", colors.badge)}>
-            {groupName}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Users className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span>{groupName}</span>
+          </div>
         )}
-        <span className="text-xs text-muted-foreground">{entry.room?.name}</span>
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+          <Badge variant="outline" className="text-[10px]">{isLab ? 'عملي' : 'نظري'}</Badge>
+        </div>
       </div>
     </div>
+  );
+
+  return (
+    <RichTooltip content={tooltipContent} side="top">
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "lecture-card p-3 min-h-[100px] cursor-grab active:cursor-grabbing relative overflow-hidden",
+          colors.bg,
+          colors.border,
+          isDragging && "opacity-50 shadow-xl ring-2 ring-primary"
+        )}
+        {...listeners}
+        {...attributes}
+      >
+        {/* Side color strip */}
+        <div className={cn(
+          "absolute top-0 right-0 w-1 h-full rounded-r-2xl",
+          isLab ? "bg-success" : "bg-primary"
+        )} />
+        
+        <div className="flex items-center justify-center gap-1 mb-2 text-muted-foreground">
+          <GripVertical className="h-3 w-3" />
+          <span className="text-[10px]">اسحب للنقل</span>
+        </div>
+        
+        <div className="font-bold text-sm text-center text-foreground mb-1 line-clamp-2">
+          {entry.subject?.name}
+        </div>
+        
+        <div className={cn("text-xs text-center mb-2", colors.text)}>
+          {entry.subject?.professor?.name}
+        </div>
+        
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          {groupName && (
+            <Badge className={cn("text-[10px] font-medium px-2 py-0.5", colors.badge)}>
+              {groupName}
+            </Badge>
+          )}
+          <span className="text-xs text-muted-foreground">{entry.room?.name}</span>
+        </div>
+      </div>
+    </RichTooltip>
   );
 }
 
