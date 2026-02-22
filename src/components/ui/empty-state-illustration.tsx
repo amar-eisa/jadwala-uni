@@ -49,15 +49,15 @@ function ProfessorsIllustration() {
       <path d="M60 65L60 80" className="stroke-success/40" strokeWidth="1.5" />
       <path d="M35 55L35 72C35 72 47 82 60 82C73 82 85 72 85 72L85 55" className="stroke-success/30" strokeWidth="1.5" fill="none" strokeLinecap="round" />
       {/* Tassel */}
-      <line x1="100" y1="45" x2="100" y2="62" className="stroke-gold" strokeWidth="1.5" />
-      <circle cx="100" cy="64" r="2.5" className="fill-gold/60" />
+      <line x1="100" y1="45" x2="100" y2="62" className="stroke-primary" strokeWidth="1.5" />
+      <circle cx="100" cy="64" r="2.5" className="fill-primary/60" />
       {/* Person silhouette */}
       <circle cx="60" cy="92" r="8" className="fill-success/10 stroke-success/30" strokeWidth="1" />
       <path d="M44 110C44 102 51 96 60 96C69 96 76 102 76 110" className="stroke-success/20" strokeWidth="1.5" fill="none" />
       {/* Decorative sparkles */}
       <circle cx="30" cy="35" r="1.5" className="fill-success/25" />
       <circle cx="90" cy="35" r="1" className="fill-success/20" />
-      <circle cx="25" cy="75" r="1" className="fill-gold/30" />
+      <circle cx="25" cy="75" r="1" className="fill-primary/30" />
     </svg>
   );
 }
@@ -104,8 +104,8 @@ function SubjectsIllustration() {
       <line x1="64" y1="24" x2="74" y2="28" className="stroke-warning/20" strokeWidth="1" strokeLinecap="round" />
       <line x1="64" y1="29" x2="72" y2="32" className="stroke-warning/15" strokeWidth="1" strokeLinecap="round" />
       {/* Pencil */}
-      <line x1="88" y1="35" x2="95" y2="80" className="stroke-gold/40" strokeWidth="2" strokeLinecap="round" />
-      <path d="M95 80L96 85L93 82Z" className="fill-gold/50" />
+      <line x1="88" y1="35" x2="95" y2="80" className="stroke-info/40" strokeWidth="2" strokeLinecap="round" />
+      <path d="M95 80L96 85L93 82Z" className="fill-info/50" />
       {/* Ground */}
       <line x1="20" y1="82" x2="100" y2="82" className="stroke-muted-foreground/10" strokeWidth="1" strokeLinecap="round" />
       {/* Sparkle */}
@@ -144,7 +144,7 @@ function TimeSlotsIllustration() {
       <rect x="81" y="92" width="18" height="6" rx="2" className="fill-[hsl(340,70%,50%)]/10 stroke-[hsl(340,70%,50%)]/20" strokeWidth="0.5" />
       {/* Sparkle */}
       <circle cx="95" cy="25" r="1.5" className="fill-[hsl(340,70%,50%)]/20" />
-      <circle cx="25" cy="30" r="1" className="fill-gold/25" />
+      <circle cx="25" cy="30" r="1" className="fill-primary/25" />
     </svg>
   );
 }
@@ -182,7 +182,7 @@ function ScheduleIllustration() {
         ))
       )}
       {/* Decorative sparkle */}
-      <circle cx="105" cy="35" r="2" className="fill-gold/25" />
+      <circle cx="105" cy="35" r="2" className="fill-primary/25" />
       <circle cx="12" cy="60" r="1.5" className="fill-primary/15" />
     </svg>
   );

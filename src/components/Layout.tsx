@@ -157,7 +157,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Glass separator with gold accent */}
-        <div className="mx-4 h-px bg-gradient-to-l from-transparent via-gold/30 to-transparent" />
+        <div className="mx-4 h-px bg-gradient-to-l from-transparent via-primary/30 to-transparent" />
 
         {/* Navigation */}
         <nav className="relative flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
