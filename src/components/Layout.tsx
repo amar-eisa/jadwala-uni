@@ -84,7 +84,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-72 sidebar-glass text-sidebar-foreground shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col",
+          "fixed inset-y-4 right-4 z-50 w-72 sidebar-glass text-sidebar-foreground rounded-3xl shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col overflow-hidden",
           sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
       >
@@ -201,7 +201,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <div className="lg:pr-72">
+      <div className="lg:pr-80">
         {/* Mobile header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:hidden shadow-sm">
           <Button
