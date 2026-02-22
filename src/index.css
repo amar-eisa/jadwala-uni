@@ -22,7 +22,7 @@
     --muted: 215 25% 94%;
     --muted-foreground: 222 20% 46%;
 
-    --accent: 40 76% 55%;
+    --accent: 195 70% 60%;
     --accent-foreground: 222 47% 11%;
 
     --destructive: 0 72% 51%;
@@ -37,7 +37,7 @@
     --info: 205 78% 48%;
     --info-foreground: 0 0% 100%;
 
-    --gold: 40 76% 55%;
+    --gold: 195 70% 60%;
     --gold-foreground: 222 47% 11%;
 
     --border: 220 20% 90%;
@@ -82,7 +82,7 @@
     --muted: 222 40% 14%;
     --muted-foreground: 220 18% 60%;
 
-    --accent: 40 76% 55%;
+    --accent: 195 70% 60%;
     --accent-foreground: 220 20% 96%;
 
     --destructive: 0 62% 35%;
@@ -97,7 +97,7 @@
     --info: 205 78% 48%;
     --info-foreground: 0 0% 100%;
 
-    --gold: 40 76% 55%;
+    --gold: 195 70% 60%;
     --gold-foreground: 222 47% 11%;
 
     --border: 222 40% 16%;
@@ -278,7 +278,7 @@
     background:
       radial-gradient(ellipse at 15% 15%, hsl(var(--primary) / 0.06) 0%, transparent 50%),
       radial-gradient(ellipse at 85% 20%, hsl(var(--gold) / 0.05) 0%, transparent 40%),
-      radial-gradient(ellipse at 50% 80%, hsl(275 55% 50% / 0.04) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 80%, hsl(210 60% 50% / 0.04) 0%, transparent 45%),
       hsl(var(--background));
   }
 
@@ -286,7 +286,7 @@
     background:
       radial-gradient(ellipse at 15% 15%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
       radial-gradient(ellipse at 85% 20%, hsl(var(--gold) / 0.06) 0%, transparent 40%),
-      radial-gradient(ellipse at 50% 80%, hsl(275 55% 50% / 0.05) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 80%, hsl(210 60% 50% / 0.05) 0%, transparent 45%),
       hsl(var(--background));
   }
 
@@ -302,7 +302,7 @@
     background: linear-gradient(90deg, 
       hsl(var(--primary)) 0%, 
       hsl(var(--gold)) 35%, 
-      hsl(275 55% 50%) 65%, 
+      hsl(210 60% 50%) 65%, 
       hsl(var(--primary)) 100%
     );
     background-size: 200% auto;
