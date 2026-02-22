@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import {
   Select,
   SelectContent,
@@ -533,14 +534,21 @@ export default function TimetablePage() {
 
         {/* Empty Schedule Alert */}
         {isActiveScheduleEmpty && !hasDraft && (
-          <Alert variant="default" className="border-warning/50 bg-warning/10">
-            <AlertCircle className="h-4 w-4 text-warning" />
-            <AlertTitle>الجدول المحفوظ فارغ</AlertTitle>
-            <AlertDescription>
-              هذا الجدول المحفوظ لا يحتوي على محاضرات. قد يكون تم مسحه عند توليد جدول جديد سابقاً.
-              يمكنك إعادة توليد الجدول وحفظه كنسخة جديدة.
-            </AlertDescription>
-          </Alert>
+          <div className="card-soft rounded-3xl p-10 text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center">
+              <AlertCircle className="h-8 w-8 text-warning" />
+            </div>
+            <h3 className="text-lg font-bold">الجدول المحفوظ فارغ</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              هذا الجدول لا يحتوي على محاضرات. يمكنك إعادة توليد الجدول وحفظه كنسخة جديدة.
+            </p>
+            <Button asChild className="gap-2 rounded-2xl">
+              <Link to="#" onClick={(e) => { e.preventDefault(); handleGenerateSchedule(); }}>
+                <Wand2 className="h-4 w-4" />
+                إعادة توليد الجدول
+              </Link>
+            </Button>
+          </div>
         )}
 
         {/* Actions Bar */}
@@ -655,9 +663,28 @@ export default function TimetablePage() {
         <Card className="border-0 shadow-card">
           <CardContent className="pt-6 overflow-x-auto">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12"><div className="animate-pulse">جاري التحميل...</div></div>
+              <div className="flex items-center justify-center py-16">
+                <div className="flex flex-col items-center gap-3">
+                  <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">جاري تحميل الجدول...</p>
+                </div>
+              </div>
             ) : uniqueTimeSlots.length === 0 ? (
-              <div className="empty-state py-12"><Clock className="h-10 w-10 mb-4" /><p>لا توجد فترات زمنية</p></div>
+              <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Clock className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold">لا توجد فترات زمنية</h3>
+                <p className="text-sm text-muted-foreground max-w-sm text-center">
+                  أضف فترات زمنية أولاً لعرض الجدول الأسبوعي
+                </p>
+                <Button asChild variant="outline" className="gap-2 rounded-2xl">
+                  <Link to="/time-slots">
+                    <Clock className="h-4 w-4" />
+                    إضافة فترات زمنية
+                  </Link>
+                </Button>
+              </div>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <div id="timetable-grid" className="min-w-[900px] p-4 bg-white">
