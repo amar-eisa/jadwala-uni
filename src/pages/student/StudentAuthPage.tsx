@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Mail, Lock, User, Hash, GraduationCap } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from '@/hooks/use-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FloatingInput } from '@/components/ui/floating-input';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
 
@@ -25,23 +25,26 @@ const signupSchema = z.object({
   studentIdNumber: z.string().min(1, 'رقم القيد مطلوب'),
 });
 
+const welcomeMessages = [
+  'مرحباً بك في بوابة الطلاب 🎓',
+  'اطلع على جدولك الدراسي بسهولة',
+  'تابع محاضراتك في أي وقت',
+];
+
 export default function StudentAuthPage() {
   const navigate = useNavigate();
   const { user, signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [welcomeIndex, setWelcomeIndex] = useState(0);
 
-  // Login state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-
-  // Signup state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupFullName, setSignupFullName] = useState('');
   const [studentIdNumber, setStudentIdNumber] = useState('');
 
-  // Check if logged-in user is a student
   useEffect(() => {
     if (!user) return;
     const checkRole = async () => {
@@ -57,6 +60,13 @@ export default function StudentAuthPage() {
     };
     checkRole();
   }, [user, navigate]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWelcomeIndex((prev) => (prev + 1) % welcomeMessages.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,10 +88,8 @@ export default function StudentAuthPage() {
     e.preventDefault();
     setError(null);
     const validation = signupSchema.safeParse({
-      email: signupEmail,
-      password: signupPassword,
-      fullName: signupFullName,
-      studentIdNumber,
+      email: signupEmail, password: signupPassword,
+      fullName: signupFullName, studentIdNumber,
     });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
@@ -95,10 +103,7 @@ export default function StudentAuthPage() {
         password: signupPassword,
         options: {
           emailRedirectTo: `${window.location.origin}/student`,
-          data: {
-            full_name: signupFullName,
-            student_id_number: studentIdNumber,
-          },
+          data: { full_name: signupFullName, student_id_number: studentIdNumber },
         },
       });
 
@@ -112,22 +117,15 @@ export default function StudentAuthPage() {
         return;
       }
 
-      // Assign student role
       if (data.user) {
         const { error: roleError } = await supabase
           .from('user_roles')
           .update({ role: 'student' as any })
           .eq('user_id', data.user.id);
-
-        if (roleError) {
-          console.error('Failed to update role:', roleError);
-        }
+        if (roleError) console.error('Failed to update role:', roleError);
       }
 
-      toast({
-        title: 'تم إنشاء الحساب بنجاح',
-        description: 'يمكنك الآن تسجيل الدخول',
-      });
+      toast({ title: 'تم إنشاء الحساب بنجاح', description: 'يمكنك الآن تسجيل الدخول' });
     } catch (err) {
       setError('حدث خطأ غير متوقع');
     }
@@ -135,20 +133,51 @@ export default function StudentAuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-primary/5 to-background" dir="rtl">
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col relative overflow-hidden" dir="rtl">
+      <div className="absolute inset-0 mesh-bg" />
+      <div className="absolute inset-0 geo-pattern opacity-30 animate-geo-drift" />
+      <div className="brand-strip w-full absolute top-0 z-10" />
+
+      <div className="relative flex-1 flex items-center justify-center p-4 z-10">
+        <motion.div
+          className="w-full max-w-md"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <img src={jadwalaLogo} alt="جدولة" className="h-20 w-auto mb-4" />
-            <h1 className="text-2xl font-bold text-foreground">بوابة الطلاب</h1>
-            <p className="text-muted-foreground mt-1 flex items-center gap-2">
-              <GraduationCap className="h-4 w-4" />
-              سجل واطلع على جدولك الدراسي
-            </p>
+            <motion.div
+              className="relative"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              <div className="absolute inset-0 rounded-full bg-primary/15 blur-2xl scale-150 animate-pulse" />
+              <img src={jadwalaLogo} alt="جدولة" className="h-20 w-auto mb-4 relative z-10" />
+            </motion.div>
+            <h1 className="text-2xl font-bold gradient-text flex items-center gap-2">
+              <GraduationCap className="h-6 w-6" />
+              بوابة الطلاب
+            </h1>
+
+            <div className="h-7 mt-2 overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={welcomeIndex}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-muted-foreground text-sm text-center"
+                >
+                  {welcomeMessages[welcomeIndex]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
           </div>
 
-          <Card className="card-glass border-0">
+          <Card className="border-0 shadow-2xl card-glass">
             <CardHeader className="text-center pb-2">
               <CardTitle>مرحباً بك</CardTitle>
               <CardDescription>سجل دخولك أو أنشئ حساب طالب جديد</CardDescription>
@@ -161,60 +190,60 @@ export default function StudentAuthPage() {
                 </TabsList>
 
                 <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">البريد الإلكتروني</Label>
-                      <div className="relative">
-                        <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="login-email" type="email" placeholder="example@email.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="pr-10" disabled={isLoading} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">كلمة المرور</Label>
-                      <div className="relative">
-                        <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="login-password" type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="pr-10" disabled={isLoading} />
-                      </div>
-                    </div>
-                    {error && <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg">{error}</p>}
-                    <Button type="submit" className="w-full rounded-2xl" disabled={isLoading}>
+                  <form onSubmit={handleLogin} className="space-y-5">
+                    <FloatingInput
+                      id="login-email" type="email" label="البريد الإلكتروني"
+                      icon={<Mail className="h-4 w-4" />}
+                      value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} disabled={isLoading}
+                    />
+                    <FloatingInput
+                      id="login-password" type="password" label="كلمة المرور"
+                      icon={<Lock className="h-4 w-4" />}
+                      value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} disabled={isLoading}
+                    />
+                    <AnimatePresence>
+                      {error && (
+                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                          className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg"
+                        >{error}</motion.p>
+                      )}
+                    </AnimatePresence>
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading}>
                       {isLoading ? <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري تسجيل الدخول...</> : 'تسجيل الدخول'}
                     </Button>
                   </form>
                 </TabsContent>
 
                 <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">الاسم الكامل</Label>
-                      <div className="relative">
-                        <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="signup-name" type="text" placeholder="أحمد محمد" value={signupFullName} onChange={(e) => setSignupFullName(e.target.value)} className="pr-10" disabled={isLoading} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="student-id">رقم القيد الجامعي</Label>
-                      <div className="relative">
-                        <Hash className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="student-id" type="text" placeholder="123456" value={studentIdNumber} onChange={(e) => setStudentIdNumber(e.target.value)} className="pr-10" disabled={isLoading} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">البريد الإلكتروني</Label>
-                      <div className="relative">
-                        <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="signup-email" type="email" placeholder="example@email.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} className="pr-10" disabled={isLoading} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">كلمة المرور</Label>
-                      <div className="relative">
-                        <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="signup-password" type="password" placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pr-10" disabled={isLoading} />
-                      </div>
-                    </div>
-                    {error && <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg">{error}</p>}
-                    <Button type="submit" className="w-full rounded-2xl" disabled={isLoading}>
+                  <form onSubmit={handleSignup} className="space-y-5">
+                    <FloatingInput
+                      id="signup-name" type="text" label="الاسم الكامل"
+                      icon={<User className="h-4 w-4" />}
+                      value={signupFullName} onChange={(e) => setSignupFullName(e.target.value)} disabled={isLoading}
+                    />
+                    <FloatingInput
+                      id="student-id" type="text" label="رقم القيد الجامعي"
+                      icon={<Hash className="h-4 w-4" />}
+                      value={studentIdNumber} onChange={(e) => setStudentIdNumber(e.target.value)} disabled={isLoading}
+                    />
+                    <FloatingInput
+                      id="signup-email" type="email" label="البريد الإلكتروني"
+                      icon={<Mail className="h-4 w-4" />}
+                      value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} disabled={isLoading}
+                    />
+                    <FloatingInput
+                      id="signup-password" type="password" label="كلمة المرور"
+                      icon={<Lock className="h-4 w-4" />}
+                      value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} disabled={isLoading}
+                    />
+                    <AnimatePresence>
+                      {error && (
+                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                          className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg"
+                        >{error}</motion.p>
+                      )}
+                    </AnimatePresence>
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading}>
                       {isLoading ? <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري إنشاء الحساب...</> : 'إنشاء حساب طالب'}
                     </Button>
                   </form>
@@ -222,13 +251,19 @@ export default function StudentAuthPage() {
               </Tabs>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </div>
 
-      <footer className="py-6 text-center">
+      <footer className="relative z-10 py-6 text-center footer-pattern">
         <div className="flex flex-col items-center gap-2">
           <img src={connectLogo} alt="Connect" className="h-8 w-auto opacity-70" />
-          <p className="text-xs text-muted-foreground">جميع الحقوق محفوظة لـ Connect</p>
+          <p className="text-xs text-muted-foreground">
+            جميع الحقوق محفوظة لـ Connect © {new Date().getFullYear()}
+          </p>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+            <span>jadwala@connectsys.cloud</span>
+            <span dir="ltr">+249128150105</span>
+          </div>
         </div>
       </footer>
     </div>

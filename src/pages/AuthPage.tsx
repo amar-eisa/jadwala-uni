@@ -142,6 +142,13 @@ export default function AuthPage() {
             </div>
           </div>
 
+          {/* Decorative divider */}
+          <div className="flex items-center gap-3 mb-6 px-8">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+            <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          </div>
+
           <Card className="border-0 shadow-2xl card-glass">
             <CardHeader className="text-center pb-2">
               <CardTitle>مرحباً بك</CardTitle>
@@ -188,7 +195,7 @@ export default function AuthPage() {
                       )}
                     </AnimatePresence>
                     
-                    <Button type="submit" className="w-full rounded-2xl h-12 text-base" disabled={isLoading}>
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading}>
                       {isLoading ? (
                         <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري تسجيل الدخول...</>
                       ) : (
@@ -241,7 +248,7 @@ export default function AuthPage() {
                       )}
                     </AnimatePresence>
                     
-                    <Button type="submit" className="w-full rounded-2xl h-12 text-base" disabled={isLoading}>
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading}>
                       {isLoading ? (
                         <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري إنشاء الحساب...</>
                       ) : (
@@ -257,7 +264,7 @@ export default function AuthPage() {
       </div>
       
       {/* Footer */}
-      <footer className="relative z-10 py-6 text-center">
+      <footer className="relative z-10 py-6 text-center footer-pattern">
         <div className="flex flex-col items-center gap-2">
           <img src={connectLogo} alt="Connect" className="h-8 w-auto opacity-70" />
           <p className="text-xs text-muted-foreground">

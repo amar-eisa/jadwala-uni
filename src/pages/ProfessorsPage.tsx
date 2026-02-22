@@ -119,7 +119,15 @@ export default function ProfessorsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
+                <div className="space-y-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="skeleton-row">
+                      <div className="skeleton-circle" />
+                      <div className="skeleton-line-medium flex-1" />
+                      <div className="skeleton-line-short" />
+                    </div>
+                  ))}
+                </div>
               ) : professors?.length === 0 ? (
                 <EmptyStateIllustration
                   type="professors"
@@ -127,28 +135,31 @@ export default function ProfessorsPage() {
                   description="ابدأ بإضافة أعضاء هيئة التدريس لربطهم بالمواد الدراسية"
                 />
               ) : (
-                <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>الاسم</TableHead><TableHead className="w-[180px]">إجراءات</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {professors?.map((professor) => (
-                      <TableRow key={professor.id} className="table-row-hover">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center"><User className="h-4 w-4 text-success" /></div>
-                            {professor.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="icon-button text-warning hover:text-warning" onClick={() => setUnavailabilityProfessor({ id: professor.id, name: professor.name })} title="أوقات عدم التوفر" disabled={!isActiveSubscription}><CalendarOff className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingProfessor({ id: professor.id, name: professor.name })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingProfessor({ id: professor.id, name: professor.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="table-enhanced">
+                  <Table>
+                    <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-[50px]">#</TableHead><TableHead>الاسم</TableHead><TableHead className="w-[180px]">إجراءات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {professors?.map((professor, index) => (
+                        <TableRow key={professor.id}>
+                          <TableCell><div className="row-number">{index + 1}</div></TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center"><User className="h-4 w-4 text-success" /></div>
+                              {professor.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="icon-button text-warning hover:text-warning" onClick={() => setUnavailabilityProfessor({ id: professor.id, name: professor.name })} title="أوقات عدم التوفر" disabled={!isActiveSubscription}><CalendarOff className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingProfessor({ id: professor.id, name: professor.name })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingProfessor({ id: professor.id, name: professor.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
