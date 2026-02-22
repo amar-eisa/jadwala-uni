@@ -46,8 +46,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
             {/* Student Portal */}
             <Route path="/student/auth" element={<StudentAuthPage />} />
-            <Route path="/student" element={<StudentProtectedRoute><StudentDashboard /></StudentProtectedRoute>} />
-            <Route path="/student/profile" element={<StudentProtectedRoute><StudentProfilePage /></StudentProtectedRoute>} />
+            <Route path="/student" element={<StudentDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
