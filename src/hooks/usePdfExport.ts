@@ -104,6 +104,32 @@ export function usePdfExport() {
         margin: 0;
       `;
 
+      // Fix text visibility in cloned cells
+      const allCells = tableClone.querySelectorAll('*');
+      allCells.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.textOverflow = 'unset';
+        htmlEl.style.whiteSpace = 'normal';
+        htmlEl.style.wordBreak = 'break-word';
+      });
+
+      // Make subject names and professor names larger and bolder
+      const fontBoldEls = tableClone.querySelectorAll('.font-bold, .text-base');
+      fontBoldEls.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.fontSize = '16px';
+        htmlEl.style.fontWeight = '700';
+        htmlEl.style.lineHeight = '1.4';
+      });
+
+      const textSmEls = tableClone.querySelectorAll('.text-sm, .text-amber-700');
+      textSmEls.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.fontSize = '14px';
+        htmlEl.style.lineHeight = '1.4';
+      });
+
       // Create footer
       const footer = document.createElement('div');
       footer.style.cssText = `
@@ -122,7 +148,7 @@ export function usePdfExport() {
             جميع الحقوق محفوظة
           </p>
           <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280;">
-            للتواصل: jadwala@connectsys.cloud
+            للتواصل: jadwala@connectsys.cloud - +249128150105
           </p>
         </div>
       `;
