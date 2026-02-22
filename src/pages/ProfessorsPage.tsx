@@ -5,20 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from '@/components/ui/dialog';
 import { useProfessors, useCreateProfessor, useUpdateProfessor, useDeleteProfessor } from '@/hooks/useProfessors';
 import { Plus, Pencil, Trash2, CalendarOff, GraduationCap, AlertTriangle, User } from 'lucide-react';
@@ -26,6 +16,16 @@ import { ProfessorUnavailabilityDialog } from '@/components/ProfessorUnavailabil
 import { cn } from '@/lib/utils';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
+import { motion } from 'framer-motion';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.05 } }
+};
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } }
+};
 
 export default function ProfessorsPage() {
   const { isActive: isActiveSubscription } = useIsActiveSubscription();
@@ -61,177 +61,111 @@ export default function ProfessorsPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Subscription Banner */}
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
         <SubscriptionBanner />
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        <motion.div variants={item} className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">إدارة الدكاترة</h1>
-            <p className="text-muted-foreground mt-1">إضافة وتعديل وحذف أعضاء هيئة التدريس</p>
+            <h1 className="text-3xl font-bold gradient-text">إدارة الدكاترة</h1>
+            <p className="text-muted-foreground mt-1 text-sm">إضافة وتعديل وحذف أعضاء هيئة التدريس</p>
           </div>
           {isActiveSubscription && (
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 shadow-lg shadow-primary/25">
-                  <Plus className="h-4 w-4" />
-                  إضافة دكتور
-                </Button>
+                <Button className="gap-2 rounded-2xl shadow-lg shadow-primary/20"><Plus className="h-4 w-4" />إضافة دكتور</Button>
               </DialogTrigger>
-            <DialogContent dir="rtl" className="sm:max-w-md">
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <GraduationCap className="h-5 w-5 text-primary" />
+              <DialogContent dir="rtl" className="sm:max-w-md">
+                <DialogHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center"><GraduationCap className="h-5 w-5 text-success" /></div>
+                    <div><DialogTitle>إضافة دكتور جديد</DialogTitle><DialogDescription>أدخل اسم الدكتور الجديد</DialogDescription></div>
                   </div>
-                  <div>
-                    <DialogTitle>إضافة دكتور جديد</DialogTitle>
-                    <DialogDescription>أدخل اسم الدكتور الجديد</DialogDescription>
-                  </div>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="space-y-2"><Label htmlFor="name">اسم الدكتور</Label><Input id="name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="مثال: د. أحمد محمد" className="text-right rounded-xl" /></div>
+                  <Button onClick={handleAdd} disabled={createProfessor.isPending || !newName.trim()} className="w-full rounded-xl">{createProfessor.isPending ? 'جاري الإضافة...' : 'إضافة'}</Button>
                 </div>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">اسم الدكتور</Label>
-                  <Input
-                    id="name"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="مثال: د. أحمد محمد"
-                    className="text-right"
-                  />
-                </div>
-                <Button onClick={handleAdd} disabled={createProfessor.isPending || !newName.trim()} className="w-full">
-                  {createProfessor.isPending ? 'جاري الإضافة...' : 'إضافة'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
           )}
-        </div>
+        </motion.div>
 
         {/* Summary Card */}
-        <Card className="border-0 shadow-card">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-emerald-50">
-                <GraduationCap className="h-6 w-6 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">إجمالي الدكاترة</p>
-                <p className="text-2xl font-bold">{professors?.length || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div variants={item}>
+          <motion.div whileHover={{ y: -3, scale: 1.01 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <Card className="card-glass border-0">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                    <GraduationCap className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">إجمالي الدكاترة</p>
+                    <p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif' }}>{professors?.length || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
         {/* Professors Table */}
-        <Card className="border-0 shadow-card">
-          <CardHeader>
-            <CardTitle>قائمة الدكاترة</CardTitle>
-            <CardDescription>جميع أعضاء هيئة التدريس المسجلين في النظام</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-pulse text-muted-foreground">جاري التحميل...</div>
-              </div>
-            ) : professors?.length === 0 ? (
-              <div className="empty-state">
-                <div className="p-4 rounded-full bg-muted mb-4">
-                  <GraduationCap className="h-10 w-10 text-muted-foreground" />
+        <motion.div variants={item}>
+          <Card className="card-glass border-0">
+            <CardHeader>
+              <CardTitle className="text-base">قائمة الدكاترة</CardTitle>
+              <CardDescription className="text-xs">جميع أعضاء هيئة التدريس المسجلين في النظام</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12"><div className="animate-pulse text-muted-foreground">جاري التحميل...</div></div>
+              ) : professors?.length === 0 ? (
+                <div className="card-glass rounded-3xl p-10 text-center space-y-3">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-muted flex items-center justify-center"><GraduationCap className="h-7 w-7 text-muted-foreground" /></div>
+                  <p className="font-semibold">لا يوجد دكاترة بعد</p>
+                  <p className="text-sm text-muted-foreground">ابدأ بإضافة أعضاء هيئة التدريس</p>
                 </div>
-                <p className="font-medium">لا يوجد دكاترة بعد</p>
-                <p className="text-sm text-muted-foreground">ابدأ بإضافة أعضاء هيئة التدريس</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead>الاسم</TableHead>
-                    <TableHead className="w-[180px]">إجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {professors?.map((professor) => (
-                    <TableRow key={professor.id} className="table-row-hover">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-emerald-50">
-                            <User className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <Table>
+                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>الاسم</TableHead><TableHead className="w-[180px]">إجراءات</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {professors?.map((professor) => (
+                      <TableRow key={professor.id} className="table-row-hover">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center"><User className="h-4 w-4 text-success" /></div>
+                            {professor.name}
                           </div>
-                          {professor.name}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="icon-button text-warning hover:text-warning"
-                            onClick={() => setUnavailabilityProfessor({ id: professor.id, name: professor.name })}
-                            title="أوقات عدم التوفر"
-                            disabled={!isActiveSubscription}
-                          >
-                            <CalendarOff className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="icon-button"
-                            onClick={() => setEditingProfessor({ id: professor.id, name: professor.name })}
-                            disabled={!isActiveSubscription}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="icon-button text-destructive hover:text-destructive"
-                            onClick={() => setDeletingProfessor({ id: professor.id, name: professor.name })}
-                            disabled={!isActiveSubscription}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="icon-button text-warning hover:text-warning" onClick={() => setUnavailabilityProfessor({ id: professor.id, name: professor.name })} title="أوقات عدم التوفر" disabled={!isActiveSubscription}><CalendarOff className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="icon-button" onClick={() => setEditingProfessor({ id: professor.id, name: professor.name })} disabled={!isActiveSubscription}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="icon-button text-destructive hover:text-destructive" onClick={() => setDeletingProfessor({ id: professor.id, name: professor.name })} disabled={!isActiveSubscription}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Edit Dialog */}
         <Dialog open={!!editingProfessor} onOpenChange={() => setEditingProfessor(null)}>
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Pencil className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <DialogTitle>تعديل الدكتور</DialogTitle>
-                  <DialogDescription>قم بتحديث بيانات الدكتور</DialogDescription>
-                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Pencil className="h-5 w-5 text-primary" /></div>
+                <div><DialogTitle>تعديل الدكتور</DialogTitle><DialogDescription>قم بتحديث بيانات الدكتور</DialogDescription></div>
               </div>
             </DialogHeader>
             {editingProfessor && (
               <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">اسم الدكتور</Label>
-                  <Input
-                    id="edit-name"
-                    value={editingProfessor.name}
-                    onChange={(e) => setEditingProfessor({ ...editingProfessor, name: e.target.value })}
-                    className="text-right"
-                  />
-                </div>
-                <Button onClick={handleUpdate} disabled={updateProfessor.isPending} className="w-full">
-                  {updateProfessor.isPending ? 'جاري التحديث...' : 'تحديث'}
-                </Button>
+                <div className="space-y-2"><Label htmlFor="edit-name">اسم الدكتور</Label><Input id="edit-name" value={editingProfessor.name} onChange={(e) => setEditingProfessor({ ...editingProfessor, name: e.target.value })} className="text-right rounded-xl" /></div>
+                <Button onClick={handleUpdate} disabled={updateProfessor.isPending} className="w-full rounded-xl">{updateProfessor.isPending ? 'جاري التحديث...' : 'تحديث'}</Button>
               </div>
             )}
           </DialogContent>
@@ -242,41 +176,24 @@ export default function ProfessorsPage() {
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-destructive/10">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                </div>
-                <div>
-                  <DialogTitle>تأكيد الحذف</DialogTitle>
-                  <DialogDescription>هل أنت متأكد من حذف هذا الدكتور؟</DialogDescription>
-                </div>
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-destructive" /></div>
+                <div><DialogTitle>تأكيد الحذف</DialogTitle><DialogDescription>هل أنت متأكد من حذف هذا الدكتور؟</DialogDescription></div>
               </div>
             </DialogHeader>
             {deletingProfessor && (
               <div className="space-y-4 mt-4">
-                <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20">
-                  <p className="text-sm text-center">
-                    سيتم حذف الدكتور <span className="font-bold">{deletingProfessor.name}</span> نهائياً
-                  </p>
-                </div>
+                <div className="p-4 bg-destructive/5 rounded-2xl border border-destructive/20"><p className="text-sm text-center">سيتم حذف الدكتور <span className="font-bold">{deletingProfessor.name}</span> نهائياً</p></div>
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setDeletingProfessor(null)} className="flex-1">
-                    إلغاء
-                  </Button>
-                  <Button variant="destructive" onClick={handleDelete} disabled={deleteProfessor.isPending} className="flex-1">
-                    {deleteProfessor.isPending ? 'جاري الحذف...' : 'حذف'}
-                  </Button>
+                  <Button variant="outline" onClick={() => setDeletingProfessor(null)} className="flex-1 rounded-xl">إلغاء</Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleteProfessor.isPending} className="flex-1 rounded-xl">{deleteProfessor.isPending ? 'جاري الحذف...' : 'حذف'}</Button>
                 </div>
               </div>
             )}
           </DialogContent>
         </Dialog>
 
-        {/* Unavailability Dialog */}
-        <ProfessorUnavailabilityDialog
-          professor={unavailabilityProfessor}
-          onClose={() => setUnavailabilityProfessor(null)}
-        />
-      </div>
+        <ProfessorUnavailabilityDialog professor={unavailabilityProfessor} onClose={() => setUnavailabilityProfessor(null)} />
+      </motion.div>
     </Layout>
   );
 }
