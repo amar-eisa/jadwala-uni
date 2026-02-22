@@ -90,21 +90,31 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted/30 to-background" dir="rtl">
-      <div className="flex-1 flex items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col relative overflow-hidden" dir="rtl">
+      {/* Mesh gradient background */}
+      <div className="absolute inset-0 mesh-bg" />
+      {/* Animated geometric pattern */}
+      <div className="absolute inset-0 geo-pattern opacity-30" />
+      {/* Brand strip */}
+      <div className="brand-strip w-full absolute top-0 z-10" />
+      
+      <div className="relative flex-1 flex items-center justify-center p-4 z-10">
         <div className="w-full max-w-md">
-          {/* Logo */}
+          {/* Logo with glow */}
           <div className="flex flex-col items-center mb-8">
-            <img 
-              src={jadwalaLogo} 
-              alt="جدولة" 
-              className="h-20 w-auto mb-4"
-            />
-            <h1 className="text-2xl font-bold text-foreground">جدولة</h1>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-primary/15 blur-2xl scale-150" />
+              <img 
+                src={jadwalaLogo} 
+                alt="جدولة" 
+                className="h-20 w-auto mb-4 relative z-10"
+              />
+            </div>
+            <h1 className="text-2xl font-bold gradient-text">جدولة</h1>
             <p className="text-muted-foreground mt-1">نظام المحاضرات الذكي</p>
           </div>
 
-          <Card className="border-0 shadow-2xl">
+          <Card className="border-0 shadow-2xl card-glass">
             <CardHeader className="text-center pb-2">
               <CardTitle>مرحباً بك</CardTitle>
               <CardDescription>سجل دخولك أو أنشئ حساباً جديداً</CardDescription>
@@ -244,7 +254,7 @@ export default function AuthPage() {
       </div>
       
       {/* Footer */}
-      <footer className="py-6 text-center">
+      <footer className="relative z-10 py-6 text-center">
         <div className="flex flex-col items-center gap-2">
           <img 
             src={connectLogo} 
@@ -252,8 +262,12 @@ export default function AuthPage() {
             className="h-8 w-auto opacity-70"
           />
           <p className="text-xs text-muted-foreground">
-            جميع الحقوق محفوظة لـ Connect
+            جميع الحقوق محفوظة لـ Connect © {new Date().getFullYear()}
           </p>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+            <span>jadwala@connectsys.cloud</span>
+            <span dir="ltr">+249128150105</span>
+          </div>
         </div>
       </footer>
     </div>
