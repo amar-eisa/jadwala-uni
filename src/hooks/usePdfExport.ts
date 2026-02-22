@@ -51,9 +51,9 @@ export function usePdfExport() {
       // Create wrapper element with all content
       const wrapper = document.createElement('div');
       wrapper.style.cssText = `
-        width: 1123px;
+        width: 1600px;
         background: white;
-        padding: 30px;
+        padding: 40px;
         direction: rtl;
         font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
         position: absolute;
@@ -122,7 +122,7 @@ export function usePdfExport() {
             جميع الحقوق محفوظة
           </p>
           <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280;">
-            للتواصل: amareisa.info@gmail.com - +294 128150105
+            للتواصل: jadwala@connectsys.cloud
           </p>
         </div>
       `;
@@ -137,7 +137,7 @@ export function usePdfExport() {
 
       // Convert to canvas
       const canvas = await html2canvas(wrapper, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
