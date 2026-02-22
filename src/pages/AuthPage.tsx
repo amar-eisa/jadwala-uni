@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Mail, Lock, User } from 'lucide-react';
 import { z } from 'zod';
+import { motion, AnimatePresence } from 'framer-motion';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
+import { FloatingInput } from '@/components/ui/floating-input';
 
 const loginSchema = z.object({
   email: z.string().email('البريد الإلكتروني غير صالح'),
@@ -22,6 +22,12 @@ const signupSchema = z.object({
   fullName: z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
 });
 
+const welcomeMessages = [
+  'مرحباً بك في جدولة ✨',
+  'نظام جدولة المحاضرات الذكي',
+  'ابدأ بتنظيم جداولك بسهولة',
+];
+
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,6 +35,7 @@ export default function AuthPage() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [welcomeIndex, setWelcomeIndex] = useState(0);
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -47,20 +54,25 @@ export default function AuthPage() {
     }
   }, [user, navigate, from]);
 
+  // Rotate welcome messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWelcomeIndex((prev) => (prev + 1) % welcomeMessages.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
     const validation = loginSchema.safeParse({ email: loginEmail, password: loginPassword });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
       return;
     }
-    
     setIsLoading(true);
     const { error } = await signIn(loginEmail, loginPassword);
     setIsLoading(false);
-    
     if (error) {
       setError(error.message);
     }
@@ -69,21 +81,16 @@ export default function AuthPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
     const validation = signupSchema.safeParse({ 
-      email: signupEmail, 
-      password: signupPassword, 
-      fullName: signupFullName 
+      email: signupEmail, password: signupPassword, fullName: signupFullName 
     });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
       return;
     }
-    
     setIsLoading(true);
     const { error } = await signUp(signupEmail, signupPassword, signupFullName);
     setIsLoading(false);
-    
     if (error) {
       setError(error.message);
     }
@@ -94,24 +101,45 @@ export default function AuthPage() {
       {/* Mesh gradient background */}
       <div className="absolute inset-0 mesh-bg" />
       {/* Animated geometric pattern */}
-      <div className="absolute inset-0 geo-pattern opacity-30" />
+      <div className="absolute inset-0 geo-pattern opacity-30 animate-geo-drift" />
       {/* Brand strip */}
       <div className="brand-strip w-full absolute top-0 z-10" />
       
       <div className="relative flex-1 flex items-center justify-center p-4 z-10">
-        <div className="w-full max-w-md">
+        <motion.div 
+          className="w-full max-w-md"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
           {/* Logo with glow */}
           <div className="flex flex-col items-center mb-8">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/15 blur-2xl scale-150" />
-              <img 
-                src={jadwalaLogo} 
-                alt="جدولة" 
-                className="h-20 w-auto mb-4 relative z-10"
-              />
-            </div>
+            <motion.div 
+              className="relative"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              <div className="absolute inset-0 rounded-full bg-primary/15 blur-2xl scale-150 animate-pulse" />
+              <img src={jadwalaLogo} alt="جدولة" className="h-20 w-auto mb-4 relative z-10" />
+            </motion.div>
             <h1 className="text-2xl font-bold gradient-text">جدولة</h1>
-            <p className="text-muted-foreground mt-1">نظام المحاضرات الذكي</p>
+            
+            {/* Animated welcome message */}
+            <div className="h-7 mt-2 overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={welcomeIndex}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-muted-foreground text-sm text-center"
+                >
+                  {welcomeMessages[welcomeIndex]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
           </div>
 
           <Card className="border-0 shadow-2xl card-glass">
@@ -127,51 +155,42 @@ export default function AuthPage() {
                 </TabsList>
                 
                 <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">البريد الإلكتروني</Label>
-                      <div className="relative">
-                        <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="example@email.com"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
-                          className="pr-10"
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
+                  <form onSubmit={handleLogin} className="space-y-5">
+                    <FloatingInput
+                      id="login-email"
+                      type="email"
+                      label="البريد الإلكتروني"
+                      icon={<Mail className="h-4 w-4" />}
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <FloatingInput
+                      id="login-password"
+                      type="password"
+                      label="كلمة المرور"
+                      icon={<Lock className="h-4 w-4" />}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      disabled={isLoading}
+                    />
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">كلمة المرور</Label>
-                      <div className="relative">
-                        <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="login-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          className="pr-10"
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
+                    <AnimatePresence>
+                      {error && (
+                        <motion.p 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg"
+                        >
+                          {error}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
                     
-                    {error && (
-                      <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg">
-                        {error}
-                      </p>
-                    )}
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base" disabled={isLoading}>
                       {isLoading ? (
-                        <>
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                          جاري تسجيل الدخول...
-                        </>
+                        <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري تسجيل الدخول...</>
                       ) : (
                         'تسجيل الدخول'
                       )}
@@ -180,67 +199,51 @@ export default function AuthPage() {
                 </TabsContent>
                 
                 <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">الاسم الكامل</Label>
-                      <div className="relative">
-                        <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="signup-name"
-                          type="text"
-                          placeholder="أحمد محمد"
-                          value={signupFullName}
-                          onChange={(e) => setSignupFullName(e.target.value)}
-                          className="pr-10"
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
+                  <form onSubmit={handleSignup} className="space-y-5">
+                    <FloatingInput
+                      id="signup-name"
+                      type="text"
+                      label="الاسم الكامل"
+                      icon={<User className="h-4 w-4" />}
+                      value={signupFullName}
+                      onChange={(e) => setSignupFullName(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <FloatingInput
+                      id="signup-email"
+                      type="email"
+                      label="البريد الإلكتروني"
+                      icon={<Mail className="h-4 w-4" />}
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <FloatingInput
+                      id="signup-password"
+                      type="password"
+                      label="كلمة المرور"
+                      icon={<Lock className="h-4 w-4" />}
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      disabled={isLoading}
+                    />
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">البريد الإلكتروني</Label>
-                      <div className="relative">
-                        <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="example@email.com"
-                          value={signupEmail}
-                          onChange={(e) => setSignupEmail(e.target.value)}
-                          className="pr-10"
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
+                    <AnimatePresence>
+                      {error && (
+                        <motion.p 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg"
+                        >
+                          {error}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">كلمة المرور</Label>
-                      <div className="relative">
-                        <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="signup-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={signupPassword}
-                          onChange={(e) => setSignupPassword(e.target.value)}
-                          className="pr-10"
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
-                    
-                    {error && (
-                      <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg">
-                        {error}
-                      </p>
-                    )}
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base" disabled={isLoading}>
                       {isLoading ? (
-                        <>
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                          جاري إنشاء الحساب...
-                        </>
+                        <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري إنشاء الحساب...</>
                       ) : (
                         'إنشاء حساب'
                       )}
@@ -250,17 +253,13 @@ export default function AuthPage() {
               </Tabs>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </div>
       
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center">
         <div className="flex flex-col items-center gap-2">
-          <img 
-            src={connectLogo} 
-            alt="Connect" 
-            className="h-8 w-auto opacity-70"
-          />
+          <img src={connectLogo} alt="Connect" className="h-8 w-auto opacity-70" />
           <p className="text-xs text-muted-foreground">
             جميع الحقوق محفوظة لـ Connect © {new Date().getFullYear()}
           </p>

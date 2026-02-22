@@ -12,6 +12,8 @@ import { useScheduleEntries } from '@/hooks/useSchedule';
 import { useSavedSchedules } from '@/hooks/useSavedSchedules';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { CountUp } from '@/components/ui/count-up';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { 
   DoorOpen, 
   GraduationCap, 
@@ -197,16 +199,15 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <p className="text-xs font-medium text-muted-foreground">{stat.name}</p>
-                      <motion.p
-                        key={stat.value}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-2xl font-bold mt-0.5 font-[Inter]"
-                        style={{ fontFamily: 'Inter, sans-serif' }}
-                      >
-                        {stat.value}
-                      </motion.p>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">{stat.name}</p>
+                          <p className="text-2xl font-bold mt-0.5 stat-number">
+                            <CountUp value={stat.value} />
+                          </p>
+                        </div>
+                        <MiniSparkline value={stat.value} color={stat.glowColor.replace(' / 0.08', '')} />
+                      </div>
                       <p className="text-[11px] text-muted-foreground mt-1">{stat.description}</p>
                     </div>
                   </div>
