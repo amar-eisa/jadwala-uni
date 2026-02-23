@@ -30,12 +30,12 @@ serve(async (req) => {
     
     const toNumber = 'whatsapp:+96599679479';
 
-    if (!accountSid || !authToken || !fromNumber) {
-      console.error('Missing Twilio credentials');
+    if (!accountSid || !authToken || !fromNumber || fromNumber === 'whatsapp:') {
+      console.log('Twilio credentials not configured - skipping notification');
       return new Response(
-        JSON.stringify({ success: false, error: 'Missing Twilio credentials' }), 
+        JSON.stringify({ success: true, skipped: true, message: 'Notification skipped - Twilio not configured' }), 
         { 
-          status: 500, 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
