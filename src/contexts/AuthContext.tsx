@@ -8,8 +8,10 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  needsPhone: boolean;
+  setNeedsPhone: (v: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,18 +20,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsPhone, setNeedsPhone] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('phone')
+            .eq('id', session.user.id)
+            .single();
+          if (profile && !(profile as any).phone) {
+            setNeedsPhone(true);
+          }
+        }
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -41,11 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         let message = 'حدث خطأ أثناء تسجيل الدخول';
         if (error.message.includes('Invalid login credentials')) {
@@ -53,17 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return { error: new Error(message) };
       }
-      
       return { error: null };
     } catch (err) {
       return { error: err as Error };
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phone: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -71,10 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
+            phone: phone,
           },
         },
       });
-      
+
       if (error) {
         let message = 'حدث خطأ أثناء إنشاء الحساب';
         if (error.message.includes('User already registered')) {
@@ -82,19 +89,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return { error: new Error(message) };
       }
-      
-      // Send WhatsApp notification (fire and forget)
+
       supabase.functions.invoke('notify-new-user', {
         body: { email, fullName }
       }).catch((err) => {
         console.error('Failed to send WhatsApp notification:', err);
       });
-      
+
       toast({
         title: 'تم إنشاء الحساب بنجاح',
         description: 'حسابك في انتظار موافقة المدير',
       });
-      
+
       return { error: null };
     } catch (err) {
       return { error: err as Error };
@@ -103,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setNeedsPhone(false);
     toast({
       title: 'تم تسجيل الخروج',
       description: 'نراك قريباً!',
@@ -110,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, needsPhone, setNeedsPhone }}>
       {children}
     </AuthContext.Provider>
   );

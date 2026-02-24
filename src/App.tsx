@@ -3,9 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import { CompleteProfileDialog } from "@/components/CompleteProfileDialog";
 import Dashboard from "./pages/Dashboard";
 import RoomsPage from "./pages/RoomsPage";
 import ProfessorsPage from "./pages/ProfessorsPage";
@@ -25,6 +26,18 @@ import { StudentProtectedRoute } from "./components/student/StudentProtectedRout
 
 const queryClient = new QueryClient();
 
+function PhonePrompt() {
+  const { user, needsPhone, setNeedsPhone } = useAuth();
+  if (!user || !needsPhone) return null;
+  return (
+    <CompleteProfileDialog
+      open={needsPhone}
+      userId={user.id}
+      onComplete={() => setNeedsPhone(false)}
+    />
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -32,6 +45,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <PhonePrompt />
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/pending-approval" element={<PendingApprovalPage />} />
