@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
 import { FloatingInput } from '@/components/ui/floating-input';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 const loginSchema = z.object({
   email: z.string().email('البريد الإلكتروني غير صالح'),
@@ -21,6 +22,7 @@ const signupSchema = z.object({
   email: z.string().email('البريد الإلكتروني غير صالح'),
   password: z.string().min(6, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'),
   fullName: z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
+  phone: z.string().min(8, 'رقم الهاتف غير صالح'),
 });
 
 const welcomeMessages = [
@@ -46,6 +48,7 @@ export default function AuthPage() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupFullName, setSignupFullName] = useState('');
+  const [signupPhone, setSignupPhone] = useState('+249');
 
   const from = location.state?.from?.pathname || '/';
 
@@ -83,14 +86,14 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     const validation = signupSchema.safeParse({ 
-      email: signupEmail, password: signupPassword, fullName: signupFullName 
+      email: signupEmail, password: signupPassword, fullName: signupFullName, phone: signupPhone 
     });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
       return;
     }
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupFullName);
+    const { error } = await signUp(signupEmail, signupPassword, signupFullName, signupPhone);
     setIsLoading(false);
     if (error) {
       setError(error.message);
@@ -255,6 +258,13 @@ export default function AuthPage() {
                       icon={<Lock className="h-4 w-4" />}
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    
+                    <PhoneInput
+                      id="signup-phone"
+                      value={signupPhone}
+                      onChange={setSignupPhone}
                       disabled={isLoading}
                     />
                     
