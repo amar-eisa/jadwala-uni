@@ -53,7 +53,7 @@ import {
   useDeleteUser,
   UserWithDetails 
 } from '@/hooks/useAdmin';
-import { FileText, Edit, Loader2, Check, X, Trash2, CalendarIcon, Clock } from 'lucide-react';
+import { FileText, Edit, Loader2, Check, X, Trash2, CalendarIcon, Clock, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateInvoicePDF } from '@/lib/invoiceGenerator';
 
@@ -241,6 +241,12 @@ export function UserManagement() {
                         <div>
                           <p className="font-medium">{user.full_name || 'بدون اسم'}</p>
                           <p className="text-sm text-muted-foreground">{user.email}</p>
+                          {user.phone && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              <span dir="ltr">{user.phone}</span>
+                            </p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -319,6 +325,12 @@ export function UserManagement() {
                       <div>
                         <p className="font-medium">{user.full_name || 'بدون اسم'}</p>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
+                        {user.phone && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            <span dir="ltr">{user.phone}</span>
+                          </p>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

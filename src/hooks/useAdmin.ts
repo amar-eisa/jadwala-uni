@@ -6,6 +6,7 @@ export interface UserWithDetails {
   id: string;
   email: string | null;
   full_name: string | null;
+  phone: string | null;
   created_at: string | null;
   role: 'admin' | 'user';
   subscription: {
@@ -80,6 +81,7 @@ export function useAdminUsers() {
           id: profile.id,
           email: profile.email,
           full_name: profile.full_name,
+          phone: profile.phone ?? null,
           created_at: profile.created_at,
           role: (userRole?.role as 'admin' | 'user') || 'user',
           subscription: subscription ? {
