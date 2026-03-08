@@ -36,9 +36,10 @@ export function useCreateRoom() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       toast({ title: 'تم إضافة القاعة بنجاح' });
+      logActivity('created', 'room', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة القاعة', description: error.message, variant: 'destructive' });
