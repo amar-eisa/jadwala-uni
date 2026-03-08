@@ -278,23 +278,23 @@ export default function ReportsPage() {
                     <Table className="mt-6">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>المادة</TableHead>
-                          <TableHead>الدفعة</TableHead>
-                          <TableHead>الأستاذ</TableHead>
-                          <TableHead>الساعات المطلوبة</TableHead>
-                          <TableHead>المجدولة</TableHead>
-                          <TableHead>الحالة</TableHead>
+                          <TableHead className="min-w-[130px]">المادة</TableHead>
+                          <TableHead className="whitespace-nowrap">الدفعة</TableHead>
+                          <TableHead className="whitespace-nowrap">الأستاذ</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">الساعات المطلوبة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">المجدولة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {subjectAllocationData.map((s, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium">{s.subjectName}</TableCell>
-                            <TableCell>{s.groupName}</TableCell>
-                            <TableCell>{s.professorName}</TableCell>
-                            <TableCell>{s.requiredHours}</TableCell>
-                            <TableCell>{s.allocatedHours}</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{s.subjectName}</TableCell>
+                            <TableCell className="whitespace-nowrap">{s.groupName}</TableCell>
+                            <TableCell className="whitespace-nowrap">{s.professorName}</TableCell>
+                            <TableCell className="text-center">{s.requiredHours}</TableCell>
+                            <TableCell className="text-center">{s.allocatedHours}</TableCell>
+                            <TableCell className="text-center">
                               <Badge variant={s.isFullyScheduled ? 'default' : 'destructive'}>
                                 {s.isFullyScheduled ? 'مكتمل' : `ناقص ${s.deficit}`}
                               </Badge>
