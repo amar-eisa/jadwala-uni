@@ -10,6 +10,8 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
 import { useSavedSchedules } from '@/hooks/useSavedSchedules';
+import { useActivityLogs } from '@/hooks/useActivityLog';
+import { ActivityLogPanel } from '@/components/ActivityLogPanel';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
