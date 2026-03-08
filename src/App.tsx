@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import * as Sentry from "@sentry/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { CompleteProfileDialog } from "@/components/CompleteProfileDialog";
+import { ErrorFallback } from "@/components/ErrorFallback";
 import { Loader2 } from "lucide-react";
 
 // Eagerly loaded (critical path)
