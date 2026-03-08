@@ -293,8 +293,8 @@ function ManagementDashboard({ secret }: { secret: string }) {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{totalUsers}</p><p className="text-xs text-muted-foreground">إجمالي</p></CardContent></Card>
-          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-green-600">{activeCount}</p><p className="text-xs text-muted-foreground">نشط</p></CardContent></Card>
-          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-orange-500">{pendingCount}</p><p className="text-xs text-muted-foreground">في الانتظار</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{activeCount}</p><p className="text-xs text-muted-foreground">نشط</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-accent-foreground">{pendingCount}</p><p className="text-xs text-muted-foreground">في الانتظار</p></CardContent></Card>
         </div>
 
         {/* Search & Filter */}
