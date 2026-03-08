@@ -48,6 +48,15 @@ import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { SaveScheduleDialog } from '@/components/SaveScheduleDialog';
 import { SavedSchedulesList } from '@/components/SavedSchedulesList';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { exportToCSV, exportToExcel } from '@/hooks/useExport';
+import { useActivityLogs, logActivity } from '@/hooks/useActivityLog';
+import { ActivityLogPanel } from '@/components/ActivityLogPanel';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
