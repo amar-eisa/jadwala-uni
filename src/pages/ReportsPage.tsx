@@ -221,10 +221,10 @@ export default function ReportsPage() {
             <Card className="mt-6">
               <CardHeader><CardTitle>تفاصيل استخدام القاعات</CardTitle></CardHeader>
               <CardContent>
-                <Table>
+                <Table dir="rtl">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">القاعة</TableHead>
+                      <TableHead className="min-w-[120px] text-right">القاعة</TableHead>
                       <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
                       <TableHead className="text-center whitespace-nowrap">الفترات المستخدمة</TableHead>
                       <TableHead className="text-center whitespace-nowrap">الفترات الفارغة</TableHead>
@@ -234,7 +234,7 @@ export default function ReportsPage() {
                   <TableBody>
                     {utilizationData.map(r => (
                       <TableRow key={r.name}>
-                        <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
+                        <TableCell className="font-medium whitespace-nowrap text-right">{r.name}</TableCell>
                         <TableCell className="text-center"><Badge variant="outline">{r.type}</Badge></TableCell>
                         <TableCell className="text-center">{r.usedSlots}</TableCell>
                         <TableCell className="text-center">{r.freeSlots}</TableCell>
