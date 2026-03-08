@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -70,6 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Auth state change:', event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // Sentry user identification
+        if (currentSession?.user) {
+          Sentry.setUser({ id: currentSession.user.id, email: currentSession.user.email });
+        } else {
+          Sentry.setUser(null);
+        }
+        
         setInitialized(true);
         setLoading(false);
 
@@ -193,6 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    Sentry.setUser(null);
     setNeedsPhone(false);
     toast({
       title: 'تم تسجيل الخروج',
