@@ -259,17 +259,15 @@ serve(async (req) => {
       sessions: s.sessionsNeeded 
     })));
 
-    // Group time slots by day - shuffle days for variety
+    // Group time slots by day - shuffle days for variety but keep slots in chronological order
     const days = shuffleArray(['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']);
     const slotsByDay: Record<string, TimeSlot[]> = {};
     
     for (const day of days) {
-      // Shuffle slots within each day for variety
-      slotsByDay[day] = shuffleArray(
-        timeSlots
-          .filter(s => s.day === day)
-          .sort((a, b) => a.start_time.localeCompare(b.start_time))
-      );
+      // Sort slots chronologically to fill from morning first (no gaps)
+      slotsByDay[day] = timeSlots
+        .filter(s => s.day === day)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
     }
     
     console.log('Slots per day:', Object.entries(slotsByDay).map(([day, slots]) => `${day}: ${slots.length}`));
