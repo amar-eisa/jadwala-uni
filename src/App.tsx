@@ -66,6 +66,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <PhonePrompt />
+            <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
             <Suspense fallback={<LazyFallback />}>
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
