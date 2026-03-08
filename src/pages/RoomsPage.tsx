@@ -179,14 +179,14 @@ export default function RoomsPage() {
                     </div>
                   ))}
                 </div>
-              ) : rooms?.length === 0 ? (
+              ) : filteredRooms?.length === 0 ? (
                 <EmptyStateIllustration
                   type="rooms"
-                  title="لا توجد قاعات بعد"
-                  description="ابدأ بإضافة القاعات والمعامل لتنظيم جداولك الدراسية"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا توجد قاعات بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة القاعات والمعامل لتنظيم جداولك الدراسية"}
                 />
               ) : (
-                <div className="table-enhanced">
+                <div className="overflow-x-auto table-enhanced">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
