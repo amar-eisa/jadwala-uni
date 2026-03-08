@@ -55,9 +55,22 @@ export default function ReportsPage() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">التقارير</h1>
-          <p className="text-muted-foreground mt-1">تحليل شامل لبيانات الجدول والموارد</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">التقارير</h1>
+            <p className="text-muted-foreground mt-1">تحليل شامل لبيانات الجدول والموارد</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => exportReportsToCSV({ workloadData, utilizationData, subjectAllocationData, conflictsData, gapsData })}>
+              <Download className="h-3 w-3" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => exportReportsToExcel({ workloadData, utilizationData, subjectAllocationData, conflictsData, gapsData })}>
+              <Download className="h-3 w-3" /> Excel
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => exportReportsToPDF({ workloadData, utilizationData, subjectAllocationData, conflictsData, gapsData })}>
+              <Download className="h-3 w-3" /> PDF
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}
