@@ -16,7 +16,8 @@ import {
   Settings,
   Phone,
   Mail,
-  BarChart3
+  BarChart3,
+  Activity
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
