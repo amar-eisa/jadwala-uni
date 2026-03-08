@@ -21,6 +21,7 @@ import { Plus, Pencil, Trash2, BookOpen, AlertTriangle, FlaskConical, FileText, 
 import { SubjectType, SUBJECT_TYPE_LABELS } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
+import { SearchInput } from '@/components/SearchInput';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
