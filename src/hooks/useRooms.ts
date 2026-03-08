@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Room, RoomType } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/hooks/useActivityLog';
 
 export function useRooms() {
   return useQuery({
@@ -35,9 +36,10 @@ export function useCreateRoom() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       toast({ title: 'تم إضافة القاعة بنجاح' });
+      logActivity('created', 'room', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة القاعة', description: error.message, variant: 'destructive' });
@@ -60,9 +62,10 @@ export function useUpdateRoom() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       toast({ title: 'تم تحديث القاعة بنجاح' });
+      logActivity('updated', 'room', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث القاعة', description: error.message, variant: 'destructive' });
@@ -81,10 +84,12 @@ export function useDeleteRoom() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       toast({ title: 'تم حذف القاعة بنجاح' });
+      logActivity('deleted', 'room', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف القاعة', description: error.message, variant: 'destructive' });

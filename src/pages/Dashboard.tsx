@@ -10,6 +10,8 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
 import { useSavedSchedules } from '@/hooks/useSavedSchedules';
+import { useActivityLogs } from '@/hooks/useActivityLog';
+import { ActivityLogPanel } from '@/components/ActivityLogPanel';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { CountUp } from '@/components/ui/count-up';
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const { data: subjects } = useSubjects();
   const { data: timeSlots } = useTimeSlots();
   const { data: savedSchedules } = useSavedSchedules();
+  const { data: activityLogs = [], isLoading: activityLoading } = useActivityLogs({ limit: 20 });
 
   const activeScheduleId = useMemo(() => {
     if (!savedSchedules) return null;
@@ -480,6 +483,11 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Activity Log */}
+        <motion.div variants={item}>
+          <ActivityLogPanel logs={activityLogs} isLoading={activityLoading} />
         </motion.div>
       </motion.div>
     </Layout>

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { StudentGroup } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/hooks/useActivityLog';
 
 export function useStudentGroups() {
   return useQuery({
@@ -35,9 +36,10 @@ export function useCreateStudentGroup() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['student_groups'] });
       toast({ title: 'تم إضافة المجموعة بنجاح' });
+      logActivity('created', 'group', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة المجموعة', description: error.message, variant: 'destructive' });
@@ -60,9 +62,10 @@ export function useUpdateStudentGroup() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['student_groups'] });
       toast({ title: 'تم تحديث المجموعة بنجاح' });
+      logActivity('updated', 'group', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث المجموعة', description: error.message, variant: 'destructive' });
@@ -81,10 +84,12 @@ export function useDeleteStudentGroup() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['student_groups'] });
       toast({ title: 'تم حذف المجموعة بنجاح' });
+      logActivity('deleted', 'group', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف المجموعة', description: error.message, variant: 'destructive' });

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Subject, SubjectType } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/hooks/useActivityLog';
 
 export function useSubjects() {
   return useQuery({
@@ -46,9 +47,10 @@ export function useCreateSubject() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast({ title: 'تم إضافة المادة بنجاح' });
+      logActivity('created', 'subject', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة المادة', description: error.message, variant: 'destructive' });
@@ -71,9 +73,10 @@ export function useUpdateSubject() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast({ title: 'تم تحديث المادة بنجاح' });
+      logActivity('updated', 'subject', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث المادة', description: error.message, variant: 'destructive' });
@@ -92,10 +95,12 @@ export function useDeleteSubject() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast({ title: 'تم حذف المادة بنجاح' });
+      logActivity('deleted', 'subject', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف المادة', description: error.message, variant: 'destructive' });

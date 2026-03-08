@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Professor } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/hooks/useActivityLog';
 
 export function useProfessors() {
   return useQuery({
@@ -35,9 +36,10 @@ export function useCreateProfessor() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['professors'] });
       toast({ title: 'تم إضافة الدكتور بنجاح' });
+      logActivity('created', 'professor', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة الدكتور', description: error.message, variant: 'destructive' });
@@ -60,9 +62,10 @@ export function useUpdateProfessor() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['professors'] });
       toast({ title: 'تم تحديث الدكتور بنجاح' });
+      logActivity('updated', 'professor', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث الدكتور', description: error.message, variant: 'destructive' });
@@ -81,10 +84,12 @@ export function useDeleteProfessor() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['professors'] });
       toast({ title: 'تم حذف الدكتور بنجاح' });
+      logActivity('deleted', 'professor', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف الدكتور', description: error.message, variant: 'destructive' });
