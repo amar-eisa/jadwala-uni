@@ -2,12 +2,39 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, LogOut, Mail } from 'lucide-react';
+import { Clock, LogOut, Mail, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
 
 export default function PendingApprovalPage() {
   const { signOut, user, loading } = useAuth();
+  const [checking, setChecking] = useState(false);
+
+  const checkApprovalStatus = async () => {
+    if (!user) return;
+    setChecking(true);
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data && data.role !== 'viewer') {
+        toast({ title: 'تمت الموافقة على حسابك!', description: 'جاري إعادة التوجيه...' });
+        window.location.href = '/';
+      } else {
+        toast({ title: 'لا يزال حسابك قيد المراجعة', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'حدث خطأ أثناء التحقق', variant: 'destructive' });
+    } finally {
+      setChecking(false);
+    }
+  };
 
   if (!loading && !user) {
     return <Navigate to="/auth" replace />;
@@ -52,6 +79,15 @@ export default function PendingApprovalPage() {
                   <span className="text-sm">{user.email}</span>
                 </div>
               )}
+
+              <Button 
+                className="w-full" 
+                onClick={checkApprovalStatus}
+                disabled={checking}
+              >
+                <RefreshCw className={`h-4 w-4 ml-2 ${checking ? 'animate-spin' : ''}`} />
+                {checking ? 'جاري التحقق...' : 'تحقق من حالة الحساب'}
+              </Button>
 
               <Button 
                 variant="outline" 
