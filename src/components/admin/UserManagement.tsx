@@ -649,14 +649,16 @@ export function UserManagement() {
                       <TableCell>
                         <Select
                           value={user.role}
-                          onValueChange={(value: 'admin' | 'user') => handleRoleChange(user.id, value)}
+                          onValueChange={(value: 'admin' | 'user' | 'editor' | 'viewer') => handleRoleChange(user.id, value)}
                         >
                           <SelectTrigger className="w-28">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">مستخدم</SelectItem>
                             <SelectItem value="admin">مدير</SelectItem>
+                            <SelectItem value="editor">محرر</SelectItem>
+                            <SelectItem value="user">مستخدم</SelectItem>
+                            <SelectItem value="viewer">مشاهد فقط</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
