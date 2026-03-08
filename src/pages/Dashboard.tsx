@@ -39,6 +39,7 @@ export default function Dashboard() {
   const { data: subjects } = useSubjects();
   const { data: timeSlots } = useTimeSlots();
   const { data: savedSchedules } = useSavedSchedules();
+  const { data: activityLogs = [], isLoading: activityLoading } = useActivityLogs({ limit: 20 });
 
   const activeScheduleId = useMemo(() => {
     if (!savedSchedules) return null;
