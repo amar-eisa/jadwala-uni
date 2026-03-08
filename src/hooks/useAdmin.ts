@@ -8,7 +8,7 @@ export interface UserWithDetails {
   full_name: string | null;
   phone: string | null;
   created_at: string | null;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'editor' | 'viewer';
   subscription: {
     id: string;
     plan_name: string;
