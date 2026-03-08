@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,10 +13,11 @@ import {
 } from '@/components/ui/table';
 import { useActivityLogs } from '@/hooks/useActivityLog';
 import { SearchInput } from '@/components/SearchInput';
-import { Activity, Calendar, Filter, FileText } from 'lucide-react';
+import { Activity, Calendar, Filter, FileText, Download } from 'lucide-react';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { exportActivityLogsToCSV, exportActivityLogsToExcel, exportActivityLogsToPDF } from '@/lib/activityLogExport';
 
 const container = {
   hidden: { opacity: 0 },
