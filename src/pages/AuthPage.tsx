@@ -34,10 +34,13 @@ const welcomeMessages = [
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, lockoutRemaining } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isLockedOut = lockoutRemaining > 0;
+  const lockoutMinutes = Math.ceil(lockoutRemaining / 60000);
+  const lockoutSeconds = Math.ceil((lockoutRemaining % 60000) / 1000);
   const [welcomeIndex, setWelcomeIndex] = useState(0);
   
   // Login form state
