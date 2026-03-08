@@ -454,6 +454,74 @@ serve(async (req) => {
 
     console.log(`Schedule generation complete: ${totalSessionsScheduled}/${totalSessionsNeeded} sessions scheduled`);
 
+    // Build detailed report
+    // Fetch group names for the report
+    const groupIds = [...new Set(subjects.map(s => s.group_id))];
+    const { data: groupsData } = await supabase.from('student_groups').select('id, name').in('id', groupIds);
+    const groupNameMap: Record<string, string> = {};
+    for (const g of (groupsData || [])) { groupNameMap[g.id] = g.name; }
+
+    // Build subject name map
+    const subjectInfoMap: Record<string, { name: string; code: string }> = {};
+    for (const s of subjects) { subjectInfoMap[s.id] = { name: (s as any).name || s.id, code: (s as any).code || '' }; }
+
+    // Build per-group report
+    const reportGroups: Record<string, {
+      name: string;
+      days: Record<string, { total: number; theory: number; practical: number }>;
+      totals: { theory: number; practical: number; total: number };
+    }> = {};
+
+    for (const entry of scheduleEntries) {
+      const sub = subjects.find(s => s.id === entry.subject_id);
+      if (!sub) continue;
+      const gid = sub.group_id;
+      if (!reportGroups[gid]) {
+        reportGroups[gid] = {
+          name: groupNameMap[gid] || gid,
+          days: {},
+          totals: { theory: 0, practical: 0, total: 0 },
+        };
+      }
+      const slot = timeSlots.find(ts => ts.id === entry.time_slot_id);
+      const day = slot?.day || 'unknown';
+      if (!reportGroups[gid].days[day]) {
+        reportGroups[gid].days[day] = { total: 0, theory: 0, practical: 0 };
+      }
+      reportGroups[gid].days[day].total++;
+      reportGroups[gid].totals.total++;
+      if (sub.type === 'theory') {
+        reportGroups[gid].days[day].theory++;
+        reportGroups[gid].totals.theory++;
+      } else {
+        reportGroups[gid].days[day].practical++;
+        reportGroups[gid].totals.practical++;
+      }
+    }
+
+    // Unscheduled sessions
+    const unscheduled = sessionQueue.map(s => {
+      const sub = s.subject;
+      const info = subjectInfoMap[sub.id];
+      const groupName = groupNameMap[sub.group_id] || sub.group_id;
+      return {
+        subjectName: info?.name || sub.id,
+        groupName,
+        type: sub.type,
+        reason: 'لم يتم إيجاد فترة زمنية أو قاعة متاحة',
+      };
+    });
+
+    const report = {
+      groups: reportGroups,
+      unscheduled,
+      overall: {
+        scheduled: scheduleEntries.length,
+        total: totalSessionsNeeded,
+        successRate: totalSessionsNeeded > 0 ? Math.round((scheduleEntries.length / totalSessionsNeeded) * 100) : 100,
+      },
+    };
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -461,7 +529,8 @@ serve(async (req) => {
         total: totalSessionsNeeded,
         subjects: subjects.length,
         schedule_id: schedule_id || null,
-        message: `تم جدولة ${scheduleEntries.length} من ${totalSessionsNeeded} محاضرة`
+        message: `تم جدولة ${scheduleEntries.length} من ${totalSessionsNeeded} محاضرة`,
+        report,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

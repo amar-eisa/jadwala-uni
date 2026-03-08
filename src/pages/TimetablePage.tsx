@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useScheduleEntries, useGenerateSchedule, useClearSchedule, useMoveScheduleEntry } from '@/hooks/useSchedule';
+import { ScheduleReportDialog, ScheduleReport } from '@/components/ScheduleReportDialog';
 import { useSavedSchedules, useSaveSchedule, useActivateSchedule, useDeleteSavedSchedule, useDuplicateSchedule } from '@/hooks/useSavedSchedules';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useRooms } from '@/hooks/useRooms';
@@ -238,7 +239,12 @@ export default function TimetablePage() {
   const { data: professors } = useProfessors();
   const { data: groups } = useStudentGroups();
   const { data: subjects } = useSubjects();
-  const generateSchedule = useGenerateSchedule();
+  const [scheduleReport, setScheduleReport] = useState<ScheduleReport | null>(null);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const generateSchedule = useGenerateSchedule((report) => {
+    setScheduleReport(report);
+    setReportDialogOpen(true);
+  });
   const clearSchedule = useClearSchedule();
   const moveEntry = useMoveScheduleEntry();
   const { exportToPdf, isExporting } = usePdfExport();
@@ -861,6 +867,11 @@ export default function TimetablePage() {
           }}
           isPending={saveSchedule.isPending}
           groupName={selectedGroupId !== 'all' ? selectedGroupName : undefined}
+        />
+        <ScheduleReportDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          report={scheduleReport}
         />
       </div>
     </Layout>
