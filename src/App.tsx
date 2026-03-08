@@ -31,6 +31,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const ActivityLogPage = lazy(() => import("./pages/ActivityLogPage"));
 const ManageSubscriptionsPage = lazy(() => import("./pages/ManageSubscriptionsPage"));
+const MonitoringPage = lazy(() => import("./pages/MonitoringPage"));
 const StudentAuthPage = lazy(() => import("./pages/student/StudentAuthPage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
 const StudentProfilePage = lazy(() => import("./pages/student/StudentProfilePage"));
@@ -82,6 +83,7 @@ const App = () => (
                 <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
                 <Route path="/activity-log" element={<ProtectedRoute><ActivityLogPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+                <Route path="/admin/monitoring" element={<AdminRoute><MonitoringPage /></AdminRoute>} />
                 <Route path="/manage-subscriptions" element={<ManageSubscriptionsPage />} />
                 {/* Student Portal */}
                 <Route path="/student/auth" element={<StudentAuthPage />} />

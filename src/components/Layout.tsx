@@ -82,7 +82,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'التقارير', href: '/reports', icon: BarChart3, countKey: null },
     { name: 'سجل النشاطات', href: '/activity-log', icon: Activity, countKey: null },
     { name: 'الإعدادات', href: '/settings', icon: Settings, countKey: null },
-    ...(isAdmin ? [{ name: 'الإدارة', href: '/admin', icon: Shield, countKey: null }] : []),
+    ...(isAdmin ? [
+      { name: 'الإدارة', href: '/admin', icon: Shield, countKey: null },
+      { name: 'المراقبة', href: '/admin/monitoring', icon: Activity, countKey: null },
+    ] : []),
   ];
 
   const handleSignOut = async () => {
