@@ -141,26 +141,26 @@ export default function ReportsPage() {
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                    <Table className="mt-6">
+                    <Table dir="rtl" className="mt-6">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[140px]">الأستاذ</TableHead>
+                          <TableHead className="min-w-[140px] text-right">الأستاذ</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الساعات الأسبوعية</TableHead>
                           <TableHead className="text-center whitespace-nowrap">المحاضرات المجدولة</TableHead>
-                          <TableHead className="min-w-[180px]">المواد</TableHead>
+                          <TableHead className="min-w-[180px] text-right">المواد</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {workloadData.map(w => (
                           <TableRow key={w.name}>
-                            <TableCell className="font-medium whitespace-nowrap">{w.name}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{w.name}</TableCell>
                             <TableCell className="text-center">
                               <Badge variant={w.totalHours > avgWorkload * 1.5 ? 'destructive' : w.totalHours < avgWorkload * 0.5 ? 'secondary' : 'default'}>
                                 {w.totalHours}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-center">{w.lectureCount}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground max-w-[250px]">{w.subjects.join('، ')}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate text-right">{w.subjects.join('، ')}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -221,10 +221,10 @@ export default function ReportsPage() {
             <Card className="mt-6">
               <CardHeader><CardTitle>تفاصيل استخدام القاعات</CardTitle></CardHeader>
               <CardContent>
-                <Table>
+                <Table dir="rtl">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">القاعة</TableHead>
+                      <TableHead className="min-w-[120px] text-right">القاعة</TableHead>
                       <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
                       <TableHead className="text-center whitespace-nowrap">الفترات المستخدمة</TableHead>
                       <TableHead className="text-center whitespace-nowrap">الفترات الفارغة</TableHead>
@@ -234,7 +234,7 @@ export default function ReportsPage() {
                   <TableBody>
                     {utilizationData.map(r => (
                       <TableRow key={r.name}>
-                        <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
+                        <TableCell className="font-medium whitespace-nowrap text-right">{r.name}</TableCell>
                         <TableCell className="text-center"><Badge variant="outline">{r.type}</Badge></TableCell>
                         <TableCell className="text-center">{r.usedSlots}</TableCell>
                         <TableCell className="text-center">{r.freeSlots}</TableCell>
@@ -275,12 +275,12 @@ export default function ReportsPage() {
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                    <Table className="mt-6">
+                    <Table dir="rtl" className="mt-6">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[130px]">المادة</TableHead>
-                          <TableHead className="whitespace-nowrap">الدفعة</TableHead>
-                          <TableHead className="whitespace-nowrap">الأستاذ</TableHead>
+                          <TableHead className="min-w-[130px] text-right">المادة</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">الدفعة</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">الأستاذ</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الساعات المطلوبة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">المجدولة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
@@ -289,9 +289,9 @@ export default function ReportsPage() {
                       <TableBody>
                         {subjectAllocationData.map((s, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium whitespace-nowrap">{s.subjectName}</TableCell>
-                            <TableCell className="whitespace-nowrap">{s.groupName}</TableCell>
-                            <TableCell className="whitespace-nowrap">{s.professorName}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{s.subjectName}</TableCell>
+                            <TableCell className="whitespace-nowrap text-right">{s.groupName}</TableCell>
+                            <TableCell className="whitespace-nowrap text-right">{s.professorName}</TableCell>
                             <TableCell className="text-center">{s.requiredHours}</TableCell>
                             <TableCell className="text-center">{s.allocatedHours}</TableCell>
                             <TableCell className="text-center">
@@ -325,14 +325,14 @@ export default function ReportsPage() {
                       <p className="text-muted-foreground">🎉 لا توجد تعارضات! الجدول سليم.</p>
                     </div>
                   ) : (
-                    <Table>
+                    <Table dir="rtl">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
-                          <TableHead className="min-w-[120px]">الاسم</TableHead>
+                          <TableHead className="min-w-[120px] text-right">الاسم</TableHead>
                           <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الوقت</TableHead>
-                          <TableHead className="min-w-[160px]">المواد المتعارضة</TableHead>
+                          <TableHead className="min-w-[160px] text-right">المواد المتعارضة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -343,10 +343,10 @@ export default function ReportsPage() {
                                 {c.type === 'professor' ? 'أستاذ' : 'قاعة'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-medium whitespace-nowrap">{c.entityName}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{c.entityName}</TableCell>
                             <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[c.day as keyof typeof DAY_LABELS] || c.day}</TableCell>
                             <TableCell className="text-center" dir="ltr">{c.time}</TableCell>
-                            <TableCell className="text-xs">{c.subjects.join('، ')}</TableCell>
+                            <TableCell className="text-xs text-right">{c.subjects.join('، ')}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -365,10 +365,10 @@ export default function ReportsPage() {
                       <p className="text-muted-foreground">لا توجد فجوات زمنية طويلة.</p>
                     </div>
                   ) : (
-                    <Table>
+                    <Table dir="rtl">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[120px]">الدفعة</TableHead>
+                          <TableHead className="min-w-[120px] text-right">الدفعة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
                           <TableHead className="text-center whitespace-nowrap">عدد الفترات الفارغة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">من</TableHead>
@@ -378,7 +378,7 @@ export default function ReportsPage() {
                       <TableBody>
                         {gapsData.map((g, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium whitespace-nowrap">{g.groupName}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{g.groupName}</TableCell>
                             <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[g.day as keyof typeof DAY_LABELS] || g.day}</TableCell>
                             <TableCell className="text-center"><Badge variant="secondary">{g.gapSize}</Badge></TableCell>
                             <TableCell className="text-center" dir="ltr">{g.fromTime}</TableCell>
