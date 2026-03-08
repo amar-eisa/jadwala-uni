@@ -1,64 +1,47 @@
 
 
-## اضافة حقل رقم الهاتف مع رمز الدولة في صفحة التسجيل
+## سجل النشاطات (Audit Log) — تتبع شامل
 
-### ملخص
-اضافة حقل لادخال رقم الهاتف عند التسجيل (بالبريد او Google) يتضمن قائمة لاختيار رمز الدولة وخانة لكتابة الرقم. عند التسجيل عبر Google يظهر نموذج لادخال رقم الهاتف قبل اتمام التسجيل.
+### الوضع الحالي
+- جدول `activity_logs` موجود في قاعدة البيانات مع RLS ✅
+- `logActivity()` و `useActivityLogs()` و `ActivityLogPanel` موجودين ✅
+- **المشكلة**: `logActivity` مستخدم فقط في `useSavedSchedules.ts` (الجداول فقط)
+- لا يوجد تتبع للقاعات، الأساتذة، المجموعات، المواد
+- سجل النشاطات غير معروض في لوحة التحكم الرئيسية
 
-### التغييرات المطلوبة
+### التعديلات المطلوبة
 
-#### 1. تعديل قاعدة البيانات
-- اضافة عمود `phone` من نوع `text` الى جدول `profiles` لتخزين رقم الهاتف مع رمز الدولة
+**1. إضافة `logActivity` لجميع عمليات CRUD (4 ملفات):**
 
-#### 2. انشاء مكون PhoneInput
-- ملف جديد: `src/components/ui/phone-input.tsx`
-- يحتوي على قائمة منسدلة لاختيار رمز الدولة (مثل +249 السودان، +966 السعودية، +20 مصر، +971 الامارات، وغيرها)
-- خانة لكتابة رقم الهاتف
-- التصميم يتبع نفس نمط FloatingInput الموجود (rounded-2xl، نفس الارتفاع والتنسيق)
-- يدعم RTL
+| Hook | العمليات المتتبعة |
+|------|------------------|
+| `useRooms.ts` | created/updated/deleted room |
+| `useProfessors.ts` | created/updated/deleted professor |
+| `useStudentGroups.ts` | created/updated/deleted group |
+| `useSubjects.ts` | created/updated/deleted subject |
 
-#### 3. تعديل نموذج التسجيل بالبريد (`AuthPage.tsx`)
-- اضافة حقل رقم الهاتف بعد حقل كلمة المرور
-- اضافة تحقق من صحة الرقم في `signupSchema`
-- تمرير رقم الهاتف الى دالة `signUp`
+في كل `onSuccess` لـ create/update/delete، نضيف استدعاء `logActivity` مع اسم العنصر ونوع العملية.
 
-#### 4. تعديل دالة signUp في AuthContext
-- تعديل التوقيع لقبول `phone` كمعامل اضافي
-- تخزين رقم الهاتف في `user_metadata` عند التسجيل
-- تحديث دالة `handle_new_user` لنسخ رقم الهاتف الى جدول `profiles`
+**2. عرض سجل النشاطات في لوحة التحكم (`Dashboard.tsx`):**
+- إضافة `useActivityLogs` و `ActivityLogPanel` أسفل قسم "إجراءات سريعة"
+- عرض آخر 20 نشاط
 
-#### 5. نموذج اكمال بيانات Google
-- انشاء مكون `CompleteProfileDialog` يظهر بعد تسجيل الدخول عبر Google اذا لم يكن رقم الهاتف مسجلا
-- يطلب من المستخدم ادخال رقم الهاتف
-- يحفظ الرقم في جدول `profiles`
-- يتم التحقق في `AuthContext` بعد تسجيل الدخول: اذا كان المستخدم ليس لديه رقم هاتف في `profiles`، يظهر النموذج
+### مثال على التعديل في كل hook:
 
-### التفاصيل التقنية
+```typescript
+// useRooms.ts - useCreateRoom
+onSuccess: (data) => {
+  queryClient.invalidateQueries({ queryKey: ['rooms'] });
+  toast({ title: 'تم إضافة القاعة بنجاح' });
+  logActivity('created', 'room', data.id, { name: data.name });
+},
+```
 
-**هيكل مكون PhoneInput:**
-- قائمة منسدلة على اليسار تعرض علم الدولة ورمزها (مثل: +249)
-- حقل ادخال الرقم على اليمين
-- القيمة النهائية تجمع رمز الدولة + الرقم (مثل: +249123456789)
-
-**رموز الدول المدعومة:**
-- السودان +249
-- السعودية +966
-- مصر +20
-- الامارات +971
-- الكويت +965
-- قطر +974
-- البحرين +973
-- عمان +968
-- الاردن +962
-- العراق +964
-- ليبيا +218
-- تونس +216
-- المغرب +212
-
-**تدفق Google OAuth:**
-1. المستخدم يسجل عبر Google
-2. يتم توجيهه الى الصفحة الرئيسية
-3. يتم التحقق من وجود رقم هاتف في profiles
-4. اذا لم يوجد، يظهر Dialog يطلب ادخال رقم الهاتف
-5. بعد الادخال يتم حفظ الرقم ويستمر المستخدم
+| ملف | تعديل |
+|-----|-------|
+| `src/hooks/useRooms.ts` | إضافة `logActivity` لـ create/update/delete |
+| `src/hooks/useProfessors.ts` | إضافة `logActivity` لـ create/update/delete |
+| `src/hooks/useStudentGroups.ts` | إضافة `logActivity` لـ create/update/delete |
+| `src/hooks/useSubjects.ts` | إضافة `logActivity` لـ create/update/delete |
+| `src/pages/Dashboard.tsx` | عرض `ActivityLogPanel` في لوحة التحكم |
 
