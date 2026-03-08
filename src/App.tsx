@@ -18,6 +18,7 @@ import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import PendingApprovalPage from "./pages/PendingApprovalPage";
 import SettingsPage from "./pages/SettingsPage";
+import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 import StudentAuthPage from "./pages/student/StudentAuthPage";
 import StudentDashboard from "./pages/student/StudentDashboard";
