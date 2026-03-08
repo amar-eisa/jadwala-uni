@@ -19,6 +19,7 @@ import { RoomType, ROOM_TYPE_LABELS } from '@/types/database';
 import { Plus, Pencil, Trash2, DoorOpen, FlaskConical, Presentation, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
+import { SearchInput } from '@/components/SearchInput';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
