@@ -27,19 +27,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Don't block on subscription loading forever - timeout after showing for max 3s
-  if (subscriptionLoading && user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">جاري التحميل...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isPending) {
+  // Only redirect when we've confirmed pending status (don't block on loading)
+  if (!subscriptionLoading && isPending) {
     return <Navigate to="/pending-approval" replace />;
   }
 
