@@ -52,6 +52,15 @@ export default function SubjectsPage() {
   const [newSubject, setNewSubject] = useState({ 
     name: '', professor_id: '', group_id: '', type: 'theory' as SubjectType, weekly_hours: 2
   });
+  const [search, setSearch] = useState('');
+
+  const filteredSubjects = subjects?.filter(s => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) ||
+      s.professor?.name?.toLowerCase().includes(q) || s.group?.name?.toLowerCase().includes(q) ||
+      SUBJECT_TYPE_LABELS[s.type].includes(q);
+  });
 
   const handleAdd = async () => {
     if (!newSubject.name.trim() || !newSubject.professor_id || !newSubject.group_id) return;
