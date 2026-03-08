@@ -461,9 +461,9 @@ serve(async (req) => {
     const groupNameMap: Record<string, string> = {};
     for (const g of (groupsData || [])) { groupNameMap[g.id] = g.name; }
 
-    // Fetch subject names for unscheduled report
-    const subjectNameMap: Record<string, string> = {};
-    for (const s of subjects) { subjectNameMap[s.id] = s.id; }
+    // Build subject name map
+    const subjectInfoMap: Record<string, { name: string; code: string }> = {};
+    for (const s of subjects) { subjectInfoMap[s.id] = { name: (s as any).name || s.id, code: (s as any).code || '' }; }
 
     // Build per-group report
     const reportGroups: Record<string, {
