@@ -13,6 +13,7 @@ import {
 import { useStudentGroups, useCreateStudentGroup, useUpdateStudentGroup, useDeleteStudentGroup } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2, Users, AlertTriangle, UserCircle } from 'lucide-react';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
+import { SearchInput } from '@/components/SearchInput';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
