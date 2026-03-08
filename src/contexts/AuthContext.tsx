@@ -71,6 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Auth state change:', event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // Sentry user identification
+        if (currentSession?.user) {
+          Sentry.setUser({ id: currentSession.user.id, email: currentSession.user.email });
+        } else {
+          Sentry.setUser(null);
+        }
+        
         setInitialized(true);
         setLoading(false);
 
