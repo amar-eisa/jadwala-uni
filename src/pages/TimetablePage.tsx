@@ -443,22 +443,33 @@ export default function TimetablePage() {
     }
   };
 
+  const getExportTitle = () => {
+    const groupName = selectedGroupId === 'all' 
+      ? undefined 
+      : groups?.find(g => g.id === selectedGroupId)?.name;
+    return groupName ? `جدول-${groupName}` : 'الجدول-الدراسي';
+  };
+
   const handleExportPdf = async () => {
     const groupName = selectedGroupId === 'all' 
       ? undefined 
       : groups?.find(g => g.id === selectedGroupId)?.name;
     
-    const filename = groupName 
-      ? `جدول-${groupName}` 
-      : 'الجدول-الدراسي';
-    
     await exportToPdf('timetable-grid', { 
-      filename,
+      filename: getExportTitle(),
       groupName,
       orientation: 'landscape',
       universityLogoUrl: userSettings?.university_logo_url,
       universityName: userSettings?.university_name
     });
+  };
+
+  const handleExportCSV = () => {
+    exportToCSV({ entries: filteredEntries, timeSlots: uniqueTimeSlots, title: getExportTitle() });
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({ entries: filteredEntries, timeSlots: uniqueTimeSlots, title: getExportTitle() });
   };
 
   const formatTime = (time: string) => time.slice(0, 5);
