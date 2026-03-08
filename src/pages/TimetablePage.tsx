@@ -662,17 +662,33 @@ export default function TimetablePage() {
                   <span className="sm:hidden">حفظ</span>
                 </Button>
                 
-                <Button 
-                  variant="outline" 
-                  onClick={handleExportPdf} 
-                  disabled={isExporting || !filteredEntries?.length} 
-                  className="gap-2"
-                  size="sm"
-                >
-                  <FileDown className="h-4 w-4" />
-                  <span className="hidden sm:inline">تصدير PDF</span>
-                  <span className="sm:hidden">PDF</span>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      disabled={isExporting || !filteredEntries?.length} 
+                      className="gap-2"
+                      size="sm"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      <span className="hidden sm:inline">تصدير</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background border shadow-lg z-50">
+                    <DropdownMenuItem onClick={handleExportPdf}>
+                      <FileText className="h-4 w-4 ml-2" />
+                      PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportExcel}>
+                      <FileSpreadsheet className="h-4 w-4 ml-2" />
+                      Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportCSV}>
+                      <FileDown className="h-4 w-4 ml-2" />
+                      CSV
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 
                 <Button 
                   variant="outline" 
