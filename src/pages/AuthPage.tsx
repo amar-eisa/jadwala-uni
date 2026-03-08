@@ -34,10 +34,13 @@ const welcomeMessages = [
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, lockoutRemaining } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isLockedOut = lockoutRemaining > 0;
+  const lockoutMinutes = Math.ceil(lockoutRemaining / 60000);
+  const lockoutSeconds = Math.ceil((lockoutRemaining % 60000) / 1000);
   const [welcomeIndex, setWelcomeIndex] = useState(0);
   
   // Login form state
@@ -199,9 +202,21 @@ export default function AuthPage() {
                       )}
                     </AnimatePresence>
                     
-                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading}>
+                    {isLockedOut && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="text-sm text-destructive text-center bg-destructive/10 py-3 px-3 rounded-lg"
+                      >
+                        🔒 تم قفل تسجيل الدخول لمدة {lockoutMinutes > 0 ? `${lockoutMinutes}:${String(lockoutSeconds).padStart(2, '0')}` : `${lockoutSeconds} ثانية`}
+                      </motion.div>
+                    )}
+
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading || isLockedOut}>
                       {isLoading ? (
                         <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري تسجيل الدخول...</>
+                      ) : isLockedOut ? (
+                        '🔒 تسجيل الدخول مقفل'
                       ) : (
                         'تسجيل الدخول'
                       )}

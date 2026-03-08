@@ -34,9 +34,12 @@ const welcomeMessages = [
 
 export default function StudentAuthPage() {
   const navigate = useNavigate();
-  const { user, signIn } = useAuth();
+  const { user, signIn, lockoutRemaining } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isLockedOut = lockoutRemaining > 0;
+  const lockoutMinutes = Math.ceil(lockoutRemaining / 60000);
+  const lockoutSeconds = Math.ceil((lockoutRemaining % 60000) / 1000);
   const [welcomeIndex, setWelcomeIndex] = useState(0);
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -209,8 +212,17 @@ export default function StudentAuthPage() {
                         >{error}</motion.p>
                       )}
                     </AnimatePresence>
-                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading}>
-                      {isLoading ? <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري تسجيل الدخول...</> : 'تسجيل الدخول'}
+                    {isLockedOut && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="text-sm text-destructive text-center bg-destructive/10 py-3 px-3 rounded-lg"
+                      >
+                        🔒 تم قفل تسجيل الدخول لمدة {lockoutMinutes > 0 ? `${lockoutMinutes}:${String(lockoutSeconds).padStart(2, '0')}` : `${lockoutSeconds} ثانية`}
+                      </motion.div>
+                    )}
+                    <Button type="submit" className="w-full rounded-2xl h-12 text-base shimmer-button" disabled={isLoading || isLockedOut}>
+                      {isLoading ? <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري تسجيل الدخول...</> : isLockedOut ? '🔒 تسجيل الدخول مقفل' : 'تسجيل الدخول'}
                     </Button>
 
                     <div className="flex items-center gap-3 my-2">
