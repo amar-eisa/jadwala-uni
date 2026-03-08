@@ -502,10 +502,10 @@ serve(async (req) => {
     // Unscheduled sessions
     const unscheduled = sessionQueue.map(s => {
       const sub = s.subject;
-      const subName = subjects.find(x => x.id === sub.id);
+      const info = subjectInfoMap[sub.id];
       const groupName = groupNameMap[sub.group_id] || sub.group_id;
       return {
-        subjectName: subName ? `${(subName as any).name || sub.id}` : sub.id,
+        subjectName: info?.name || sub.id,
         groupName,
         type: sub.type,
         reason: 'لم يتم إيجاد فترة زمنية أو قاعة متاحة',

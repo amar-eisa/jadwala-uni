@@ -35,7 +35,7 @@ export function useScheduleEntries(scheduleId?: string | null) {
   });
 }
 
-export function useGenerateSchedule() {
+export function useGenerateSchedule(onReport?: (report: any) => void) {
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -55,6 +55,9 @@ export function useGenerateSchedule() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
+      if (data?.report && onReport) {
+        onReport(data.report);
+      }
       toast({ 
         title: 'تم توليد الجدول بنجاح', 
         description: `تم جدولة ${data.scheduled} من ${data.total} مادة`
