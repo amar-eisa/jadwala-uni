@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
+  const [initialized, setInitialized] = useState(false);
 
   // Countdown timer for lockout
   useEffect(() => {
@@ -51,49 +52,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [lockoutUntil]);
 
   useEffect(() => {
-    // Safety timeout: force loading=false after 5 seconds to prevent infinite hang
-    const safetyTimeout = setTimeout(() => {
-      setLoading((prev) => {
-        if (prev) {
-          console.warn('Auth loading timeout - forcing loading=false');
-        }
-        return false;
-      });
-    }, 5000);
+    let mounted = true;
 
+    // CRITICAL: Force loading=false after 3 seconds no matter what
+    const forceTimeout = setTimeout(() => {
+      if (mounted && !initialized) {
+        console.warn('Auth: Force timeout triggered after 3s');
+        setInitialized(true);
+        setLoading(false);
+      }
+    }, 3000);
+
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        clearTimeout(safetyTimeout);
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, currentSession) => {
+        if (!mounted) return;
+        console.log('Auth state change:', event);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setInitialized(true);
         setLoading(false);
 
-        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('phone')
-            .eq('id', session.user.id)
-            .single();
-          if (profile && !(profile as any).phone) {
-            setNeedsPhone(true);
-          }
+        // Check phone in a deferred way to avoid blocking
+        if (currentSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          setTimeout(() => {
+            supabase
+              .from('profiles')
+              .select('phone')
+              .eq('id', currentSession.user.id)
+              .single()
+              .then(({ data: profile }) => {
+                if (mounted && profile && !(profile as any).phone) {
+                  setNeedsPhone(true);
+                }
+              });
+          }, 0);
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(safetyTimeout);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // Then get initial session
+    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
+      if (!mounted) return;
+      if (error) {
+        console.error('getSession error:', error);
+      }
+      // Only set if not already initialized by onAuthStateChange
+      if (!initialized) {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setInitialized(true);
+        setLoading(false);
+      }
     }).catch((err) => {
-      console.error('Failed to get session:', err);
-      clearTimeout(safetyTimeout);
+      if (!mounted) return;
+      console.error('getSession catch:', err);
+      setInitialized(true);
       setLoading(false);
     });
 
     return () => {
-      clearTimeout(safetyTimeout);
+      mounted = false;
+      clearTimeout(forceTimeout);
       subscription.unsubscribe();
     };
   }, []);

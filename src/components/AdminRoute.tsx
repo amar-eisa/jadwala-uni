@@ -21,7 +21,15 @@ export function AdminRoute({ children }: AdminRouteProps) {
     }
   }, [user, authLoading, isAdmin, adminLoading, navigate]);
 
-  if (authLoading || adminLoading) {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (adminLoading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
