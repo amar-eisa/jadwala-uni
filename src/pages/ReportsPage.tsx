@@ -224,21 +224,21 @@ export default function ReportsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>القاعة</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>الفترات المستخدمة</TableHead>
-                      <TableHead>الفترات الفارغة</TableHead>
-                      <TableHead>نسبة الإشغال</TableHead>
+                      <TableHead className="min-w-[120px]">القاعة</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">الفترات المستخدمة</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">الفترات الفارغة</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">نسبة الإشغال</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {utilizationData.map(r => (
                       <TableRow key={r.name}>
-                        <TableCell className="font-medium">{r.name}</TableCell>
-                        <TableCell><Badge variant="outline">{r.type}</Badge></TableCell>
-                        <TableCell>{r.usedSlots}</TableCell>
-                        <TableCell>{r.freeSlots}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
+                        <TableCell className="text-center"><Badge variant="outline">{r.type}</Badge></TableCell>
+                        <TableCell className="text-center">{r.usedSlots}</TableCell>
+                        <TableCell className="text-center">{r.freeSlots}</TableCell>
+                        <TableCell className="text-center">
                           <Badge variant={r.percentage > 80 ? 'destructive' : r.percentage < 30 ? 'secondary' : 'default'}>
                             {r.percentage}%
                           </Badge>
