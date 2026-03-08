@@ -38,6 +38,12 @@ export default function GroupsPage() {
   const [editingGroup, setEditingGroup] = useState<{ id: string; name: string } | null>(null);
   const [deletingGroup, setDeletingGroup] = useState<{ id: string; name: string } | null>(null);
   const [newName, setNewName] = useState('');
+  const [search, setSearch] = useState('');
+
+  const filteredGroups = groups?.filter(g => {
+    if (!search) return true;
+    return g.name.toLowerCase().includes(search.toLowerCase());
+  });
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
