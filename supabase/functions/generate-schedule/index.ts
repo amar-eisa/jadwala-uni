@@ -315,7 +315,7 @@ serve(async (req) => {
     const sessionQueue = [...shuffledSessions];
     let totalSessionsScheduled = 0;
     
-    for (let round = 0; round < 20 && sessionQueue.length > 0; round++) {
+    for (let round = 0; round < 50 && sessionQueue.length > 0; round++) {
       const sortedDays = [...days].sort((a, b) => sessionsPerDay[a] - sessionsPerDay[b]);
       
       let scheduledThisRound = 0;
