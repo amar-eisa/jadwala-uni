@@ -202,6 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    Sentry.setUser(null);
     setNeedsPhone(false);
     toast({
       title: 'تم تسجيل الخروج',
