@@ -22,6 +22,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ReportsPage from "./pages/ReportsPage";
 import ActivityLogPage from "./pages/ActivityLogPage";
 import NotFound from "./pages/NotFound";
+import ManageSubscriptionsPage from "./pages/ManageSubscriptionsPage";
 import StudentAuthPage from "./pages/student/StudentAuthPage";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentProfilePage from "./pages/student/StudentProfilePage";
