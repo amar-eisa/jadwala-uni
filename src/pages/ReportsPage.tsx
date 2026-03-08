@@ -275,12 +275,12 @@ export default function ReportsPage() {
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                    <Table className="mt-6">
+                    <Table dir="rtl" className="mt-6">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[130px]">المادة</TableHead>
-                          <TableHead className="whitespace-nowrap">الدفعة</TableHead>
-                          <TableHead className="whitespace-nowrap">الأستاذ</TableHead>
+                          <TableHead className="min-w-[130px] text-right">المادة</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">الدفعة</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">الأستاذ</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الساعات المطلوبة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">المجدولة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
@@ -289,9 +289,9 @@ export default function ReportsPage() {
                       <TableBody>
                         {subjectAllocationData.map((s, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium whitespace-nowrap">{s.subjectName}</TableCell>
-                            <TableCell className="whitespace-nowrap">{s.groupName}</TableCell>
-                            <TableCell className="whitespace-nowrap">{s.professorName}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{s.subjectName}</TableCell>
+                            <TableCell className="whitespace-nowrap text-right">{s.groupName}</TableCell>
+                            <TableCell className="whitespace-nowrap text-right">{s.professorName}</TableCell>
                             <TableCell className="text-center">{s.requiredHours}</TableCell>
                             <TableCell className="text-center">{s.allocatedHours}</TableCell>
                             <TableCell className="text-center">
