@@ -303,6 +303,15 @@ serve(async (req) => {
     
     const subjectScheduledDays: Record<string, Set<string>> = {};
     
+    // Track per-group per-day session count (max 4 per group per day)
+    const MAX_GROUP_SESSIONS_PER_DAY = 4;
+    const groupDaySessions: Record<string, number> = {};
+    
+    // Track theory/practical counts per day for balancing
+    const dayTheoryCount: Record<string, number> = {};
+    const dayPracticalCount: Record<string, number> = {};
+    days.forEach(d => { dayTheoryCount[d] = 0; dayPracticalCount[d] = 0; });
+    
     const sessionQueue = [...shuffledSessions];
     let totalSessionsScheduled = 0;
     
