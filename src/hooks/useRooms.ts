@@ -62,9 +62,10 @@ export function useUpdateRoom() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       toast({ title: 'تم تحديث القاعة بنجاح' });
+      logActivity('updated', 'room', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث القاعة', description: error.message, variant: 'destructive' });
