@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useScheduleEntries, useGenerateSchedule, useClearSchedule, useMoveScheduleEntry } from '@/hooks/useSchedule';
+import { ScheduleReportDialog, ScheduleReport } from '@/components/ScheduleReportDialog';
 import { useSavedSchedules, useSaveSchedule, useActivateSchedule, useDeleteSavedSchedule, useDuplicateSchedule } from '@/hooks/useSavedSchedules';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useRooms } from '@/hooks/useRooms';
