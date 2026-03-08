@@ -27,7 +27,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (subscriptionLoading) {
+  // Don't block on subscription loading forever - timeout after showing for max 3s
+  if (subscriptionLoading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
         <div className="flex flex-col items-center gap-4">
