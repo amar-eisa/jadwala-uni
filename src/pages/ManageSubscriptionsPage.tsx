@@ -330,7 +330,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
 
         {/* Pending Section */}
         {pendingUsers.length > 0 && (
-          <Card className="border-orange-200 dark:border-orange-800">
+          <Card className="border-accent">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Clock className="h-4 w-4 text-accent-foreground" />
