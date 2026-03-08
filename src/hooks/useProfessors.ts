@@ -36,9 +36,10 @@ export function useCreateProfessor() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['professors'] });
       toast({ title: 'تم إضافة الدكتور بنجاح' });
+      logActivity('created', 'professor', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة الدكتور', description: error.message, variant: 'destructive' });
