@@ -8,7 +8,7 @@ export interface UserWithDetails {
   full_name: string | null;
   phone: string | null;
   created_at: string | null;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'editor' | 'viewer';
   subscription: {
     id: string;
     plan_name: string;
@@ -72,7 +72,7 @@ export function useAdminUsers() {
           full_name: profile.full_name,
           phone: profile.phone ?? null,
           created_at: profile.created_at,
-          role: (userRole?.role as 'admin' | 'user') || 'user',
+          role: (userRole?.role as 'admin' | 'user' | 'editor' | 'viewer') || 'user',
           subscription: subscription ? {
             id: subscription.id,
             plan_name: subscription.plan_name,
@@ -112,7 +112,7 @@ export function useUpdateSubscription() {
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: 'admin' | 'user'; }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: 'admin' | 'user' | 'editor' | 'viewer'; }) => {
       const { data: existing } = await supabase
         .from('user_roles')
         .select('*')

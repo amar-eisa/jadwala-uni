@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,10 +13,11 @@ import {
 } from '@/components/ui/table';
 import { useActivityLogs } from '@/hooks/useActivityLog';
 import { SearchInput } from '@/components/SearchInput';
-import { Activity, Calendar, Filter, FileText } from 'lucide-react';
+import { Activity, Calendar, Filter, FileText, Download } from 'lucide-react';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { exportActivityLogsToCSV, exportActivityLogsToExcel, exportActivityLogsToPDF } from '@/lib/activityLogExport';
 
 const container = {
   hidden: { opacity: 0 },
@@ -100,9 +102,22 @@ export default function ActivityLogPage() {
   return (
     <Layout>
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-        <motion.div variants={item}>
-          <h1 className="text-3xl font-bold gradient-text">سجل النشاطات</h1>
-          <p className="text-muted-foreground mt-1 text-sm">تتبع جميع العمليات والتغييرات في النظام</p>
+        <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">سجل النشاطات</h1>
+            <p className="text-muted-foreground mt-1 text-sm">تتبع جميع العمليات والتغييرات في النظام</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => exportActivityLogsToCSV(filteredLogs)}>
+              <Download className="h-3 w-3" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => exportActivityLogsToExcel(filteredLogs)}>
+              <Download className="h-3 w-3" /> Excel
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => exportActivityLogsToPDF(filteredLogs)}>
+              <Download className="h-3 w-3" /> PDF
+            </Button>
+          </div>
         </motion.div>
 
         {/* Filters */}

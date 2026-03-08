@@ -33,6 +33,7 @@ import { useUserSettings } from '@/hooks/useUserSettings';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
@@ -258,22 +259,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="lg:pr-80 flex-1 flex flex-col">
         {/* Mobile header */}
-        <header className="sticky top-[3px] z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:hidden shadow-sm">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(true)}
-            className="hover:bg-muted"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <img 
-              src={jadwalaLogo} 
-              alt="جدولة" 
-              className="h-8 w-auto"
-            />
-            <h1 className="text-lg font-bold">جدولة</h1>
+        <header className="sticky top-[3px] z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 shadow-sm">
+          <div className="flex items-center gap-2 lg:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className="hover:bg-muted"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <img 
+                src={jadwalaLogo} 
+                alt="جدولة" 
+                className="h-8 w-auto"
+              />
+              <h1 className="text-lg font-bold">جدولة</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mr-auto lg:mr-0">
+            <NotificationBell />
           </div>
         </header>
 

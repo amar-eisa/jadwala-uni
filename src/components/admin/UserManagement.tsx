@@ -184,7 +184,7 @@ export function UserManagement() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: 'admin' | 'user') => {
+  const handleRoleChange = async (userId: string, newRole: 'admin' | 'user' | 'editor' | 'viewer') => {
     try {
       await updateRole.mutateAsync({ userId, role: newRole });
       toast.success('تم تحديث الدور بنجاح');
@@ -290,10 +290,12 @@ export function UserManagement() {
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="الدور" />
           </SelectTrigger>
-          <SelectContent>
+           <SelectContent>
             <SelectItem value="all">كل الأدوار</SelectItem>
             <SelectItem value="admin">مدير</SelectItem>
             <SelectItem value="user">مستخدم</SelectItem>
+            <SelectItem value="editor">محرر</SelectItem>
+            <SelectItem value="viewer">مشاهد فقط</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -322,7 +324,7 @@ export function UserManagement() {
         <Badge variant="outline">
           {PLAN_OPTIONS.find(p => p.value === user.subscription?.plan_name)?.label || user.subscription?.plan_name}
         </Badge>
-        <Badge variant="secondary">{user.role === 'admin' ? 'مدير' : 'مستخدم'}</Badge>
+        <Badge variant="secondary">{{ admin: 'مدير', user: 'مستخدم', editor: 'محرر', viewer: 'مشاهد' }[user.role] || user.role}</Badge>
       </div>
       {user.subscription?.start_date && (
         <p className="text-xs text-muted-foreground">
@@ -647,14 +649,16 @@ export function UserManagement() {
                       <TableCell>
                         <Select
                           value={user.role}
-                          onValueChange={(value: 'admin' | 'user') => handleRoleChange(user.id, value)}
+                          onValueChange={(value: 'admin' | 'user' | 'editor' | 'viewer') => handleRoleChange(user.id, value)}
                         >
                           <SelectTrigger className="w-28">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">مستخدم</SelectItem>
                             <SelectItem value="admin">مدير</SelectItem>
+                            <SelectItem value="editor">محرر</SelectItem>
+                            <SelectItem value="user">مستخدم</SelectItem>
+                            <SelectItem value="viewer">مشاهد فقط</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
