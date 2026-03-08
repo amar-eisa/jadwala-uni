@@ -19,14 +19,14 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useScheduleEntries, useGenerateSchedule, useClearSchedule, useMoveScheduleEntry } from '@/hooks/useSchedule';
-import { useSavedSchedules, useSaveSchedule, useActivateSchedule, useDeleteSavedSchedule } from '@/hooks/useSavedSchedules';
+import { useSavedSchedules, useSaveSchedule, useActivateSchedule, useDeleteSavedSchedule, useDuplicateSchedule } from '@/hooks/useSavedSchedules';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useRooms } from '@/hooks/useRooms';
 import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen, FolderOpen, BookOpen, GraduationCap, MapPin } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen, FolderOpen, BookOpen, GraduationCap, MapPin, FileSpreadsheet, History } from 'lucide-react';
 import { RichTooltip } from '@/components/ui/rich-tooltip';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +48,15 @@ import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { SaveScheduleDialog } from '@/components/SaveScheduleDialog';
 import { SavedSchedulesList } from '@/components/SavedSchedulesList';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { exportToCSV, exportToExcel } from '@/hooks/useExport';
+import { useActivityLogs, logActivity } from '@/hooks/useActivityLog';
+import { ActivityLogPanel } from '@/components/ActivityLogPanel';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const DAYS_ORDER: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday'];
 
@@ -239,6 +248,8 @@ export default function TimetablePage() {
   const saveSchedule = useSaveSchedule();
   const activateSchedule = useActivateSchedule();
   const deleteSavedSchedule = useDeleteSavedSchedule();
+  const duplicateSchedule = useDuplicateSchedule();
+  const { data: activityLogs = [], isLoading: isLoadingLogs } = useActivityLogs({ entityType: undefined, limit: 50 });
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   
@@ -432,22 +443,33 @@ export default function TimetablePage() {
     }
   };
 
+  const getExportTitle = () => {
+    const groupName = selectedGroupId === 'all' 
+      ? undefined 
+      : groups?.find(g => g.id === selectedGroupId)?.name;
+    return groupName ? `جدول-${groupName}` : 'الجدول-الدراسي';
+  };
+
   const handleExportPdf = async () => {
     const groupName = selectedGroupId === 'all' 
       ? undefined 
       : groups?.find(g => g.id === selectedGroupId)?.name;
     
-    const filename = groupName 
-      ? `جدول-${groupName}` 
-      : 'الجدول-الدراسي';
-    
     await exportToPdf('timetable-grid', { 
-      filename,
+      filename: getExportTitle(),
       groupName,
       orientation: 'landscape',
       universityLogoUrl: userSettings?.university_logo_url,
       universityName: userSettings?.university_name
     });
+  };
+
+  const handleExportCSV = () => {
+    exportToCSV({ entries: filteredEntries, timeSlots: uniqueTimeSlots, title: getExportTitle() });
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({ entries: filteredEntries, timeSlots: uniqueTimeSlots, title: getExportTitle() });
   };
 
   const formatTime = (time: string) => time.slice(0, 5);
@@ -565,6 +587,9 @@ export default function TimetablePage() {
               isLoading={isLoadingSaved}
               onActivate={handleActivateSchedule}
               onDelete={(id) => deleteSavedSchedule.mutate(id)}
+              onExportCsv={() => handleExportCSV()}
+              onExportExcel={() => handleExportExcel()}
+              onDuplicate={(id, name) => duplicateSchedule.mutate({ scheduleId: id, newName: name })}
               disabled={!isActiveSubscription}
             />
           </div>
@@ -637,17 +662,33 @@ export default function TimetablePage() {
                   <span className="sm:hidden">حفظ</span>
                 </Button>
                 
-                <Button 
-                  variant="outline" 
-                  onClick={handleExportPdf} 
-                  disabled={isExporting || !filteredEntries?.length} 
-                  className="gap-2"
-                  size="sm"
-                >
-                  <FileDown className="h-4 w-4" />
-                  <span className="hidden sm:inline">تصدير PDF</span>
-                  <span className="sm:hidden">PDF</span>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      disabled={isExporting || !filteredEntries?.length} 
+                      className="gap-2"
+                      size="sm"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      <span className="hidden sm:inline">تصدير</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background border shadow-lg z-50">
+                    <DropdownMenuItem onClick={handleExportPdf}>
+                      <FileText className="h-4 w-4 ml-2" />
+                      PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportExcel}>
+                      <FileSpreadsheet className="h-4 w-4 ml-2" />
+                      Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportCSV}>
+                      <FileDown className="h-4 w-4 ml-2" />
+                      CSV
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 
                 <Button 
                   variant="outline" 
@@ -781,6 +822,9 @@ export default function TimetablePage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Activity Log */}
+        <ActivityLogPanel logs={activityLogs} isLoading={isLoadingLogs} />
 
         {/* Room Selection Dialog */}
         <Dialog open={roomSelectDialog?.open || false} onOpenChange={(open) => !open && setRoomSelectDialog(null)}>

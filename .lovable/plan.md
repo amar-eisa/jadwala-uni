@@ -1,101 +1,64 @@
 
 
-## تحسينات وظيفية - خطة التنفيذ
+## اضافة حقل رقم الهاتف مع رمز الدولة في صفحة التسجيل
 
-### 1. تصدير الجدول بصيغ متعددة (Excel, CSV)
+### ملخص
+اضافة حقل لادخال رقم الهاتف عند التسجيل (بالبريد او Google) يتضمن قائمة لاختيار رمز الدولة وخانة لكتابة الرقم. عند التسجيل عبر Google يظهر نموذج لادخال رقم الهاتف قبل اتمام التسجيل.
 
-**ملف جديد: `src/hooks/useExport.ts`**
-- دالة `exportToCSV` تحول بيانات الجدول (entries + timeSlots) الى ملف CSV بترميز UTF-8 BOM للعربية
-- دالة `exportToExcel` تنشئ ملف Excel (.xlsx) باستخدام بناء XML بسيط (SpreadsheetML) بدون مكتبة خارجية
-- كلا الدالتين تأخذ نفس البيانات: الايام، الفترات الزمنية، والمحاضرات
+### التغييرات المطلوبة
 
-**تعديل `src/pages/TimetablePage.tsx`:**
-- تحويل زر التصدير الحالي الى dropdown menu يحتوي 3 خيارات: PDF, Excel, CSV
-- استخدام DropdownMenu من shadcn
+#### 1. تعديل قاعدة البيانات
+- اضافة عمود `phone` من نوع `text` الى جدول `profiles` لتخزين رقم الهاتف مع رمز الدولة
 
-**تعديل `src/components/SavedSchedulesList.tsx`:**
-- اضافة خيارات Excel و CSV بجانب زر PDF الحالي عبر dropdown
+#### 2. انشاء مكون PhoneInput
+- ملف جديد: `src/components/ui/phone-input.tsx`
+- يحتوي على قائمة منسدلة لاختيار رمز الدولة (مثل +249 السودان، +966 السعودية، +20 مصر، +971 الامارات، وغيرها)
+- خانة لكتابة رقم الهاتف
+- التصميم يتبع نفس نمط FloatingInput الموجود (rounded-2xl، نفس الارتفاع والتنسيق)
+- يدعم RTL
 
-### 2. نظام إشعارات داخلي للطلاب
+#### 3. تعديل نموذج التسجيل بالبريد (`AuthPage.tsx`)
+- اضافة حقل رقم الهاتف بعد حقل كلمة المرور
+- اضافة تحقق من صحة الرقم في `signupSchema`
+- تمرير رقم الهاتف الى دالة `signUp`
 
-**Migration جديد:**
-- جدول `notifications` بالاعمدة: id, user_id (nullable for broadcast), group_id, title, message, type (schedule_update, general), is_read, created_at
-- RLS: الطلاب يقرأون اشعاراتهم فقط، المدراء يضيفون
-- تفعيل Realtime على الجدول
+#### 4. تعديل دالة signUp في AuthContext
+- تعديل التوقيع لقبول `phone` كمعامل اضافي
+- تخزين رقم الهاتف في `user_metadata` عند التسجيل
+- تحديث دالة `handle_new_user` لنسخ رقم الهاتف الى جدول `profiles`
 
-**تعديل `src/hooks/useSavedSchedules.ts`:**
-- عند تفعيل جدول (activate)، ادراج اشعار تلقائي في جدول notifications للمجموعة المعنية
-
-**ملف جديد: `src/hooks/useNotifications.ts`**
-- جلب الاشعارات غير المقروءة للطالب
-- تحديث حالة القراءة
-- اشتراك Realtime
-
-**تعديل `src/pages/student/StudentDashboard.tsx`:**
-- اضافة جرس اشعارات في الهيدر مع عدد غير المقروءة
-- عرض قائمة الاشعارات في popover
-
-### 3. سجل تغييرات (Activity Log)
-
-**Migration جديد:**
-- جدول `activity_logs` بالاعمدة: id, user_id, action (created, updated, deleted, activated, generated), entity_type (schedule, subject, professor, room, group), entity_id, details (jsonb), created_at
-- RLS: المستخدم يرى سجلاته، المدير يرى الكل
-
-**ملف جديد: `src/hooks/useActivityLog.ts`**
-- دالة `logActivity` لتسجيل الاحداث
-- hook لجلب السجلات مع فلترة حسب النوع والتاريخ
-
-**تعديل الهوكات الموجودة:**
-- اضافة `logActivity` في: useSaveSchedule, useActivateSchedule, useDeleteSavedSchedule, useGenerateSchedule, useClearSchedule
-
-**ملف جديد: `src/components/ActivityLogPanel.tsx`**
-- عرض السجلات كقائمة زمنية (timeline) مع ايقونات حسب نوع الحدث
-- فلترة حسب النوع والتاريخ
-
-**تعديل `src/pages/TimetablePage.tsx`:**
-- اضافة تبويب او زر لعرض سجل التغييرات
-
-### 4. نسخ جدول من فصل سابق كقالب
-
-**تعديل `src/hooks/useSavedSchedules.ts`:**
-- اضافة mutation `useDuplicateSchedule` تنسخ جدول محفوظ: تنشئ saved_schedule جديد وتنسخ جميع schedule_entries مع IDs جديدة
-
-**تعديل `src/components/SavedSchedulesList.tsx`:**
-- اضافة زر "نسخ كقالب" (Copy icon) لكل جدول محفوظ
-- عند الضغط يظهر dialog لتسمية النسخة الجديدة
-
-**تعديل `src/pages/TimetablePage.tsx`:**
-- دعم فتح النسخة المنسوخة مباشرة بعد الانشاء
+#### 5. نموذج اكمال بيانات Google
+- انشاء مكون `CompleteProfileDialog` يظهر بعد تسجيل الدخول عبر Google اذا لم يكن رقم الهاتف مسجلا
+- يطلب من المستخدم ادخال رقم الهاتف
+- يحفظ الرقم في جدول `profiles`
+- يتم التحقق في `AuthContext` بعد تسجيل الدخول: اذا كان المستخدم ليس لديه رقم هاتف في `profiles`، يظهر النموذج
 
 ### التفاصيل التقنية
 
-**هيكل جدول notifications:**
-```text
-notifications
-├── id (uuid, PK)
-├── group_id (uuid, FK -> student_groups)
-├── title (text)
-├── message (text)
-├── type (text: schedule_update | general)
-├── is_read (boolean, default false)
-├── user_id (uuid, nullable - for targeted)
-└── created_at (timestamptz)
-```
+**هيكل مكون PhoneInput:**
+- قائمة منسدلة على اليسار تعرض علم الدولة ورمزها (مثل: +249)
+- حقل ادخال الرقم على اليمين
+- القيمة النهائية تجمع رمز الدولة + الرقم (مثل: +249123456789)
 
-**هيكل جدول activity_logs:**
-```text
-activity_logs
-├── id (uuid, PK)
-├── user_id (uuid)
-├── action (text)
-├── entity_type (text)
-├── entity_id (uuid, nullable)
-├── details (jsonb)
-└── created_at (timestamptz)
-```
+**رموز الدول المدعومة:**
+- السودان +249
+- السعودية +966
+- مصر +20
+- الامارات +971
+- الكويت +965
+- قطر +974
+- البحرين +973
+- عمان +968
+- الاردن +962
+- العراق +964
+- ليبيا +218
+- تونس +216
+- المغرب +212
 
-**تصدير CSV/Excel:**
-- الهيكل: صف لكل فترة زمنية، عمود لكل يوم
-- كل خلية تحتوي: اسم المادة + الاستاذ + القاعة
-- ترميز UTF-8 BOM لدعم العربية في Excel
+**تدفق Google OAuth:**
+1. المستخدم يسجل عبر Google
+2. يتم توجيهه الى الصفحة الرئيسية
+3. يتم التحقق من وجود رقم هاتف في profiles
+4. اذا لم يوجد، يظهر Dialog يطلب ادخال رقم الهاتف
+5. بعد الادخال يتم حفظ الرقم ويستمر المستخدم
 
