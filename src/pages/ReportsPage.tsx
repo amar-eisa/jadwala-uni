@@ -328,24 +328,24 @@ export default function ReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>النوع</TableHead>
-                          <TableHead>الاسم</TableHead>
-                          <TableHead>اليوم</TableHead>
-                          <TableHead>الوقت</TableHead>
-                          <TableHead>المواد المتعارضة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
+                          <TableHead className="min-w-[120px]">الاسم</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">الوقت</TableHead>
+                          <TableHead className="min-w-[160px]">المواد المتعارضة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {conflictsData.map((c, i) => (
                           <TableRow key={i}>
-                            <TableCell>
+                            <TableCell className="text-center">
                               <Badge variant="destructive">
                                 {c.type === 'professor' ? 'أستاذ' : 'قاعة'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-medium">{c.entityName}</TableCell>
-                            <TableCell>{DAY_LABELS[c.day as keyof typeof DAY_LABELS] || c.day}</TableCell>
-                            <TableCell dir="ltr">{c.time}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{c.entityName}</TableCell>
+                            <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[c.day as keyof typeof DAY_LABELS] || c.day}</TableCell>
+                            <TableCell className="text-center" dir="ltr">{c.time}</TableCell>
                             <TableCell className="text-xs">{c.subjects.join('، ')}</TableCell>
                           </TableRow>
                         ))}
