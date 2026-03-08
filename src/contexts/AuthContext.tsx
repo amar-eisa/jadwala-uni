@@ -175,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       supabase.functions.invoke('notify-new-user', {
-        body: { email, fullName }
+        body: { email, fullName, phone }
       }).catch((err) => {
         console.error('Failed to send WhatsApp notification:', err);
       });
