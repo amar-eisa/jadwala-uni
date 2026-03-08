@@ -15,7 +15,8 @@ import {
   Shield,
   Settings,
   Phone,
-  Mail
+  Mail,
+  BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -75,6 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     ...navigation,
+    { name: 'التقارير', href: '/reports', icon: BarChart3, countKey: null },
     { name: 'الإعدادات', href: '/settings', icon: Settings, countKey: null },
     ...(isAdmin ? [{ name: 'الإدارة', href: '/admin', icon: Shield, countKey: null }] : []),
   ];
