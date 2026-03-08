@@ -194,8 +194,15 @@ export default function SubjectsPage() {
         <motion.div variants={item}>
           <Card className="card-glass border-0">
             <CardHeader>
-              <CardTitle className="text-base">قائمة المواد</CardTitle>
-              <CardDescription className="text-xs">جميع المواد الدراسية المسجلة في النظام</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base">قائمة المواد</CardTitle>
+                  <CardDescription className="text-xs">جميع المواد الدراسية المسجلة في النظام</CardDescription>
+                </div>
+                <div className="w-full sm:w-64">
+                  <SearchInput value={search} onChange={setSearch} placeholder="بحث في المواد..." />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
