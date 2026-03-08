@@ -65,8 +65,8 @@ export function usePerformanceMetrics() {
         tcpConnection: Math.round(nav.connectEnd - nav.connectStart),
         serverResponse: Math.round(nav.responseStart - nav.requestStart),
         domParsing: Math.round(nav.domInteractive - nav.responseEnd),
-        domContentLoaded: Math.round(nav.domContentLoadedEventEnd - nav.navigationStart),
-        pageLoad: Math.round(nav.loadEventEnd - nav.navigationStart),
+        domContentLoaded: Math.round(nav.domContentLoadedEventEnd - nav.startTime),
+        pageLoad: Math.round(nav.loadEventEnd - nav.startTime),
       });
     }
 
