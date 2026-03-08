@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,11 @@ import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
 
 export default function PendingApprovalPage() {
-  const { signOut, user } = useAuth();
+  const { signOut, user, loading } = useAuth();
+
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted/30 to-background" dir="rtl">
