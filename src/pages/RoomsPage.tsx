@@ -44,6 +44,13 @@ export default function RoomsPage() {
   const [editingRoom, setEditingRoom] = useState<{ id: string; name: string; type: RoomType } | null>(null);
   const [deletingRoom, setDeletingRoom] = useState<{ id: string; name: string } | null>(null);
   const [newRoom, setNewRoom] = useState({ name: '', type: 'lecture' as RoomType });
+  const [search, setSearch] = useState('');
+
+  const filteredRooms = rooms?.filter(room => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return room.name.toLowerCase().includes(s) || ROOM_TYPE_LABELS[room.type].includes(s);
+  });
 
   const handleAdd = async () => {
     if (!newRoom.name.trim()) return;
