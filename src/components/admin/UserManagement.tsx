@@ -324,7 +324,7 @@ export function UserManagement() {
         <Badge variant="outline">
           {PLAN_OPTIONS.find(p => p.value === user.subscription?.plan_name)?.label || user.subscription?.plan_name}
         </Badge>
-        <Badge variant="secondary">{user.role === 'admin' ? 'مدير' : 'مستخدم'}</Badge>
+        <Badge variant="secondary">{{ admin: 'مدير', user: 'مستخدم', editor: 'محرر', viewer: 'مشاهد' }[user.role] || user.role}</Badge>
       </div>
       {user.subscription?.start_date && (
         <p className="text-xs text-muted-foreground">
