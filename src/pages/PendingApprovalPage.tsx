@@ -11,6 +11,30 @@ import connectLogo from '@/assets/connect-logo.png';
 
 export default function PendingApprovalPage() {
   const { signOut, user, loading } = useAuth();
+  const [checking, setChecking] = useState(false);
+
+  const checkApprovalStatus = async () => {
+    if (!user) return;
+    setChecking(true);
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data && data.role !== 'viewer') {
+        toast({ title: 'تمت الموافقة على حسابك!', description: 'جاري إعادة التوجيه...' });
+        window.location.href = '/';
+      } else {
+        toast({ title: 'لا يزال حسابك قيد المراجعة', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'حدث خطأ أثناء التحقق', variant: 'destructive' });
+    } finally {
+      setChecking(false);
+    }
+  };
 
   if (!loading && !user) {
     return <Navigate to="/auth" replace />;
