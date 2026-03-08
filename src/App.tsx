@@ -65,6 +65,7 @@ const App = () => (
               <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
               <Route path="/activity-log" element={<ProtectedRoute><ActivityLogPage /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+              <Route path="/manage-subscriptions" element={<ManageSubscriptionsPage />} />
               {/* Student Portal */}
               <Route path="/student/auth" element={<StudentAuthPage />} />
               <Route path="/student" element={<StudentDashboard />} />
