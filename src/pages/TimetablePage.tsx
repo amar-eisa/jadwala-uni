@@ -248,6 +248,8 @@ export default function TimetablePage() {
   const saveSchedule = useSaveSchedule();
   const activateSchedule = useActivateSchedule();
   const deleteSavedSchedule = useDeleteSavedSchedule();
+  const duplicateSchedule = useDuplicateSchedule();
+  const { data: activityLogs = [], isLoading: isLoadingLogs } = useActivityLogs({ entityType: undefined, limit: 50 });
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   
