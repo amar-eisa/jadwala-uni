@@ -9,7 +9,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { Users, DoorOpen, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
+import { Users, DoorOpen, BookOpen, AlertTriangle, Loader2, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF } from '@/lib/reportsExport';
 
 const COLORS = [
   'hsl(var(--primary))',
