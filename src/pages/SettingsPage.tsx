@@ -209,6 +209,11 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Backup & Restore */}
+        <motion.div variants={item}>
+          <BackupRestore />
+        </motion.div>
       </motion.div>
     </Layout>
   );
