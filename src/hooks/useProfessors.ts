@@ -84,10 +84,12 @@ export function useDeleteProfessor() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['professors'] });
       toast({ title: 'تم حذف الدكتور بنجاح' });
+      logActivity('deleted', 'professor', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف الدكتور', description: error.message, variant: 'destructive' });

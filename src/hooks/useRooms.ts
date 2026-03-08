@@ -84,10 +84,12 @@ export function useDeleteRoom() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       toast({ title: 'تم حذف القاعة بنجاح' });
+      logActivity('deleted', 'room', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف القاعة', description: error.message, variant: 'destructive' });

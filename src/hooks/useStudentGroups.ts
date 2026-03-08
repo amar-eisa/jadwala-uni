@@ -84,10 +84,12 @@ export function useDeleteStudentGroup() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['student_groups'] });
       toast({ title: 'تم حذف المجموعة بنجاح' });
+      logActivity('deleted', 'group', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف المجموعة', description: error.message, variant: 'destructive' });

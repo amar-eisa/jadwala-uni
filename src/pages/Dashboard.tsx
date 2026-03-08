@@ -484,6 +484,11 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Activity Log */}
+        <motion.div variants={item}>
+          <ActivityLogPanel logs={activityLogs} isLoading={activityLoading} />
+        </motion.div>
       </motion.div>
     </Layout>
   );

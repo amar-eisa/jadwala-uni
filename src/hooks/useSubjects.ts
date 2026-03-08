@@ -95,10 +95,12 @@ export function useDeleteSubject() {
         .eq('id', id);
       
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast({ title: 'تم حذف المادة بنجاح' });
+      logActivity('deleted', 'subject', id);
     },
     onError: (error) => {
       toast({ title: 'خطأ في حذف المادة', description: error.message, variant: 'destructive' });
