@@ -1,64 +1,75 @@
 
 
-## اضافة حقل رقم الهاتف مع رمز الدولة في صفحة التسجيل
+## خطة التنفيذ: اختبارات الخوارزمية + التحميل الكسول
 
-### ملخص
-اضافة حقل لادخال رقم الهاتف عند التسجيل (بالبريد او Google) يتضمن قائمة لاختيار رمز الدولة وخانة لكتابة الرقم. عند التسجيل عبر Google يظهر نموذج لادخال رقم الهاتف قبل اتمام التسجيل.
+### المهمة 1: كتابة اختبارات Collision Detection
 
-### التغييرات المطلوبة
+بما أن خوارزمية التوليد تعمل داخل Edge Function (Deno)، لا يمكن اختبارها مباشرة من Vitest. الحل: **استخراج منطق Collision Detection إلى دوال نقية (pure functions)** في ملف مشترك يمكن اختباره.
 
-#### 1. تعديل قاعدة البيانات
-- اضافة عمود `phone` من نوع `text` الى جدول `profiles` لتخزين رقم الهاتف مع رمز الدولة
+#### الملفات الجديدة:
+1. **`src/lib/scheduleUtils.ts`** — دوال نقية مستخرجة من الخوارزمية:
+   - `checkRoomConflict(roomId, timeSlotId, occupied)` — هل القاعة مشغولة؟
+   - `checkProfessorConflict(professorId, timeSlotId, occupied)` — هل الأستاذ مشغول؟
+   - `checkGroupConflict(groupId, timeSlotId, occupied)` — هل المجموعة مشغولة؟
+   - `isProfessorAvailable(professorId, timeSlot, unavailabilityRules)` — هل الأستاذ متاح؟
+   - `findAvailableSlot(subject, rooms, timeSlots, occupiedSets, unavailability)` — إيجاد أول فترة وقاعة متاحة
+   - `getGroupDaySessionCount(groupId, day, tracker)` — عدد جلسات المجموعة في اليوم
+   - `isTypeBalanced(day, isTheory, theoryCounts, practicalCounts, round)` — هل التوزيع النظري/العملي متوازن؟
 
-#### 2. انشاء مكون PhoneInput
-- ملف جديد: `src/components/ui/phone-input.tsx`
-- يحتوي على قائمة منسدلة لاختيار رمز الدولة (مثل +249 السودان، +966 السعودية، +20 مصر، +971 الامارات، وغيرها)
-- خانة لكتابة رقم الهاتف
-- التصميم يتبع نفس نمط FloatingInput الموجود (rounded-2xl، نفس الارتفاع والتنسيق)
-- يدعم RTL
+2. **`src/lib/__tests__/scheduleUtils.test.ts`** — اختبارات شاملة:
+   - اختبار عدم وجود تعارض عند فترات مختلفة
+   - اختبار كشف تعارض القاعة (نفس القاعة + نفس الفترة)
+   - اختبار كشف تعارض الأستاذ (نفس الأستاذ + نفس الفترة)
+   - اختبار كشف تعارض المجموعة (نفس المجموعة + نفس الفترة)
+   - اختبار عدم توفر الأستاذ (يوم كامل / فترة محددة)
+   - اختبار حد المجموعة اليومي (max 4)
+   - اختبار توازن النظري/العملي
+   - اختبار `findAvailableSlot` يعيد أول خيار متاح
+   - اختبار `findAvailableSlot` يعيد null عند عدم التوفر
 
-#### 3. تعديل نموذج التسجيل بالبريد (`AuthPage.tsx`)
-- اضافة حقل رقم الهاتف بعد حقل كلمة المرور
-- اضافة تحقق من صحة الرقم في `signupSchema`
-- تمرير رقم الهاتف الى دالة `signUp`
+3. تحديث **Edge Function** لاستيراد نفس المنطق (أو إبقاء نسخة مطابقة مع تعليق يربطها بالملف المشترك).
 
-#### 4. تعديل دالة signUp في AuthContext
-- تعديل التوقيع لقبول `phone` كمعامل اضافي
-- تخزين رقم الهاتف في `user_metadata` عند التسجيل
-- تحديث دالة `handle_new_user` لنسخ رقم الهاتف الى جدول `profiles`
+---
 
-#### 5. نموذج اكمال بيانات Google
-- انشاء مكون `CompleteProfileDialog` يظهر بعد تسجيل الدخول عبر Google اذا لم يكن رقم الهاتف مسجلا
-- يطلب من المستخدم ادخال رقم الهاتف
-- يحفظ الرقم في جدول `profiles`
-- يتم التحقق في `AuthContext` بعد تسجيل الدخول: اذا كان المستخدم ليس لديه رقم هاتف في `profiles`، يظهر النموذج
+### المهمة 2: التحميل الكسول (Code Splitting)
 
-### التفاصيل التقنية
+تحويل استيراد الصفحات في `src/App.tsx` من استيراد مباشر إلى `React.lazy` مع `Suspense`.
 
-**هيكل مكون PhoneInput:**
-- قائمة منسدلة على اليسار تعرض علم الدولة ورمزها (مثل: +249)
-- حقل ادخال الرقم على اليمين
-- القيمة النهائية تجمع رمز الدولة + الرقم (مثل: +249123456789)
+#### الصفحات التي ستُحمّل كسولاً (غير أساسية):
+- `ReportsPage`
+- `ActivityLogPage`
+- `AdminPage`
+- `SettingsPage`
+- `ManageSubscriptionsPage`
+- `StudentAuthPage`
+- `StudentDashboard`
+- `StudentProfilePage`
+- `TimetablePage`
+- `ProfessorsPage`
+- `GroupsPage`
+- `SubjectsPage`
+- `TimeSlotsPage`
+- `RoomsPage`
 
-**رموز الدول المدعومة:**
-- السودان +249
-- السعودية +966
-- مصر +20
-- الامارات +971
-- الكويت +965
-- قطر +974
-- البحرين +973
-- عمان +968
-- الاردن +962
-- العراق +964
-- ليبيا +218
-- تونس +216
-- المغرب +212
+#### الصفحات التي تبقى محمّلة مباشرة (أساسية):
+- `Dashboard` (الصفحة الرئيسية)
+- `AuthPage` (تسجيل الدخول)
+- `PendingApprovalPage`
+- `NotFound`
 
-**تدفق Google OAuth:**
-1. المستخدم يسجل عبر Google
-2. يتم توجيهه الى الصفحة الرئيسية
-3. يتم التحقق من وجود رقم هاتف في profiles
-4. اذا لم يوجد، يظهر Dialog يطلب ادخال رقم الهاتف
-5. بعد الادخال يتم حفظ الرقم ويستمر المستخدم
+#### التغييرات في `App.tsx`:
+```tsx
+import { lazy, Suspense } from 'react';
+
+const RoomsPage = lazy(() => import('./pages/RoomsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+// ... etc
+
+// Wrap routes with Suspense + loading fallback
+<Suspense fallback={<div className="flex items-center justify-center min-h-screen">...</div>}>
+  <Routes>...</Routes>
+</Suspense>
+```
+
+هذا سيقلل حجم الحزمة الأولية بشكل ملحوظ لأن كل صفحة ستُحمّل فقط عند الحاجة.
 
