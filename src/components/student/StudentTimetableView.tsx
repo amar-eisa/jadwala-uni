@@ -71,7 +71,7 @@ export function StudentTimetableView({ entries, timeSlots, groupName }: Props) {
   }
 
   return (
-    <div className="card-glass overflow-hidden">
+    <div className="card-glass overflow-hidden" id="student-timetable">
       {groupName && (
         <div className="px-6 py-4 border-b border-border/30 bg-primary/5">
           <h2 className="text-lg font-bold text-foreground">جدول مجموعة: {groupName}</h2>

@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Users, Calendar, CheckCircle, Bell, Check } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Loader2, Users, Calendar, CheckCircle, Bell, Check, Download, Image, FileText } from 'lucide-react';
 import { StudentTimetableView } from '@/components/student/StudentTimetableView';
 import { useStudentGroups, useStudentScheduleEntries, useStudentTimeSlots } from '@/hooks/useStudentSchedule';
 import { useNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
+import { usePdfExport } from '@/hooks/usePdfExport';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
+import connectLogo from '@/assets/connect-logo.png';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -16,6 +23,9 @@ import { cn } from '@/lib/utils';
 export default function StudentDashboard() {
   const { data: groups, isLoading: groupsLoading } = useStudentGroups();
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { exportToPdf, isExporting: isPdfExporting } = usePdfExport();
+  const [isImageExporting, setIsImageExporting] = useState(false);
 
   const { data: entries = [], isLoading: entriesLoading } = useStudentScheduleEntries(selectedGroup);
   const { data: timeSlots = [], isLoading: timeSlotsLoading } = useStudentTimeSlots();
@@ -25,6 +35,117 @@ export default function StudentDashboard() {
   const markAllAsRead = useMarkAllAsRead();
 
   const groupName = groups?.find(g => g.id === selectedGroup)?.name;
+
+  // Realtime subscription for schedule updates
+  useEffect(() => {
+    if (!selectedGroup) return;
+
+    const channel = supabase
+      .channel('student-schedule-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'schedule_entries' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['student-schedule', selectedGroup] });
+          toast.info('تم تحديث جدولك الدراسي');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedGroup, queryClient]);
+
+  const exportAsImage = useCallback(async () => {
+    setIsImageExporting(true);
+    try {
+      const element = document.getElementById('student-timetable');
+      if (!element) throw new Error('Element not found');
+
+      const date = new Date().toLocaleDateString('ar-SA', {
+        year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
+      });
+
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = `
+        width: 1600px; background: white; padding: 40px; direction: rtl;
+        font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+        position: absolute; left: -9999px; top: 0;
+      `;
+
+      const header = document.createElement('div');
+      header.style.cssText = `
+        text-align: center; margin-bottom: 20px; padding-bottom: 15px;
+        border-bottom: 2px solid #e5e7eb;
+      `;
+      header.innerHTML = `
+        <h1 style="font-size: 28px; font-weight: bold; color: #1f2937; margin: 0 0 8px 0;">
+          جدول المحاضرات لدفعة: ${groupName || ''}
+        </h1>
+        <p style="font-size: 14px; color: #6b7280; margin: 0;">${date}</p>
+      `;
+
+      const tableClone = element.cloneNode(true) as HTMLElement;
+      tableClone.style.cssText = 'width: 100%; margin: 0;';
+      const allCells = tableClone.querySelectorAll('*');
+      allCells.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.textOverflow = 'unset';
+        htmlEl.style.whiteSpace = 'normal';
+        htmlEl.style.wordBreak = 'break-word';
+      });
+
+      const footer = document.createElement('div');
+      footer.style.cssText = `
+        display: flex; align-items: center; gap: 15px; margin-top: 25px;
+        padding-top: 15px; border-top: 1px solid #e5e7eb; direction: rtl;
+      `;
+      footer.innerHTML = `
+        <img src="${connectLogo}" width="50" height="40" style="object-fit: contain;" />
+        <div style="flex: 1;">
+          <p style="margin: 0; font-size: 13px; color: #374151; font-weight: 500;">جميع الحقوق محفوظة</p>
+          <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280;">للتواصل: jadwala@connectsys.cloud - +249128150105</p>
+        </div>
+      `;
+
+      wrapper.appendChild(header);
+      wrapper.appendChild(tableClone);
+      wrapper.appendChild(footer);
+      document.body.appendChild(wrapper);
+
+      const canvas = await html2canvas(wrapper, {
+        scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', allowTaint: true,
+      });
+      document.body.removeChild(wrapper);
+
+      const link = document.createElement('a');
+      link.download = `جدول-${groupName || 'الطالب'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      toast.success('تم تحميل الجدول كصورة');
+    } catch (error) {
+      console.error('Error exporting image:', error);
+      toast.error('حدث خطأ أثناء تحميل الصورة');
+    } finally {
+      setIsImageExporting(false);
+    }
+  }, [groupName]);
+
+  const exportAsPdf = useCallback(async () => {
+    try {
+      await exportToPdf('student-timetable', {
+        filename: `جدول-${groupName || 'الطالب'}`,
+        groupName: groupName,
+        orientation: 'landscape',
+      });
+      toast.success('تم تحميل الجدول كـ PDF');
+    } catch {
+      toast.error('حدث خطأ أثناء تحميل الـ PDF');
+    }
+  }, [exportToPdf, groupName]);
 
   if (groupsLoading) {
     return (
@@ -135,9 +256,33 @@ export default function StudentDashboard() {
                   مجموعة: {groupName}
                 </p>
               </div>
-              <Button variant="outline" onClick={() => setSelectedGroup(null)}>
-                تغيير المجموعة
-              </Button>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" disabled={isImageExporting || isPdfExporting}>
+                      {(isImageExporting || isPdfExporting) ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      ) : (
+                        <Download className="h-4 w-4 ml-2" />
+                      )}
+                      تحميل الجدول
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={exportAsImage}>
+                      <Image className="h-4 w-4 ml-2" />
+                      تحميل كصورة PNG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportAsPdf}>
+                      <FileText className="h-4 w-4 ml-2" />
+                      تحميل كـ PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="outline" onClick={() => setSelectedGroup(null)}>
+                  تغيير المجموعة
+                </Button>
+              </div>
             </div>
 
             {entriesLoading || timeSlotsLoading ? (
