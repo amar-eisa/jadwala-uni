@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +15,9 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   needsPhone: boolean;
   setNeedsPhone: (v: boolean) => void;
+  loginAttempts: number;
+  lockoutUntil: number | null;
+  lockoutRemaining: number;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +27,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsPhone, setNeedsPhone] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [lockoutRemaining, setLockoutRemaining] = useState(0);
+
+  // Countdown timer for lockout
+  useEffect(() => {
+    if (!lockoutUntil) {
+      setLockoutRemaining(0);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, lockoutUntil - Date.now());
+      setLockoutRemaining(remaining);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setLoginAttempts(0);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -51,21 +79,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
+    // Check lockout
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const mins = Math.ceil((lockoutUntil - Date.now()) / 60000);
+      return { error: new Error(`تم قفل تسجيل الدخول. حاول مرة أخرى بعد ${mins} دقائق`) };
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        let message = 'حدث خطأ أثناء تسجيل الدخول';
-        if (error.message.includes('Invalid login credentials')) {
-          message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+
+        if (newAttempts >= MAX_ATTEMPTS) {
+          setLockoutUntil(Date.now() + LOCKOUT_DURATION_MS);
+          return { error: new Error('تم تجاوز عدد المحاولات المسموحة. تم قفل تسجيل الدخول لمدة 5 دقائق') };
         }
-        return { error: new Error(message) };
+
+        let message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+        if (!error.message.includes('Invalid login credentials')) {
+          message = 'حدث خطأ أثناء تسجيل الدخول';
+        }
+        return { error: new Error(`${message} (${MAX_ATTEMPTS - newAttempts} محاولات متبقية)`) };
       }
+      // Success - reset attempts
+      setLoginAttempts(0);
+      setLockoutUntil(null);
       return { error: null };
     } catch (err) {
       return { error: err as Error };
     }
-  };
+  }, [loginAttempts, lockoutUntil]);
 
   const signUp = async (email: string, password: string, fullName: string, phone: string) => {
     try {
@@ -117,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, needsPhone, setNeedsPhone }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, needsPhone, setNeedsPhone, loginAttempts, lockoutUntil, lockoutRemaining }}>
       {children}
     </AuthContext.Provider>
   );
