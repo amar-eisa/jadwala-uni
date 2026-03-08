@@ -47,9 +47,10 @@ export function useCreateSubject() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast({ title: 'تم إضافة المادة بنجاح' });
+      logActivity('created', 'subject', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة المادة', description: error.message, variant: 'destructive' });
