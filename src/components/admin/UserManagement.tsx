@@ -184,7 +184,7 @@ export function UserManagement() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: 'admin' | 'user') => {
+  const handleRoleChange = async (userId: string, newRole: 'admin' | 'user' | 'editor' | 'viewer') => {
     try {
       await updateRole.mutateAsync({ userId, role: newRole });
       toast.success('تم تحديث الدور بنجاح');
