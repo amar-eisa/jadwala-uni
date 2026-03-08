@@ -81,6 +81,14 @@ export default function PendingApprovalPage() {
               )}
 
               <Button 
+                className="w-full" 
+                onClick={checkApprovalStatus}
+                disabled={checking}
+              >
+                <RefreshCw className={`h-4 w-4 ml-2 ${checking ? 'animate-spin' : ''}`} />
+                {checking ? 'جاري التحقق...' : 'تحقق من حالة الحساب'}
+              </Button>
+
                 variant="outline" 
                 className="w-full" 
                 onClick={signOut}
