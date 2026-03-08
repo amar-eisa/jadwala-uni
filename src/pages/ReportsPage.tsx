@@ -365,10 +365,10 @@ export default function ReportsPage() {
                       <p className="text-muted-foreground">لا توجد فجوات زمنية طويلة.</p>
                     </div>
                   ) : (
-                    <Table>
+                    <Table dir="rtl">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[120px]">الدفعة</TableHead>
+                          <TableHead className="min-w-[120px] text-right">الدفعة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
                           <TableHead className="text-center whitespace-nowrap">عدد الفترات الفارغة</TableHead>
                           <TableHead className="text-center whitespace-nowrap">من</TableHead>
@@ -378,7 +378,7 @@ export default function ReportsPage() {
                       <TableBody>
                         {gapsData.map((g, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium whitespace-nowrap">{g.groupName}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{g.groupName}</TableCell>
                             <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[g.day as keyof typeof DAY_LABELS] || g.day}</TableCell>
                             <TableCell className="text-center"><Badge variant="secondary">{g.gapSize}</Badge></TableCell>
                             <TableCell className="text-center" dir="ltr">{g.fromTime}</TableCell>
