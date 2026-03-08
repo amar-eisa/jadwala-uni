@@ -368,21 +368,21 @@ export default function ReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>الدفعة</TableHead>
-                          <TableHead>اليوم</TableHead>
-                          <TableHead>عدد الفترات الفارغة</TableHead>
-                          <TableHead>من</TableHead>
-                          <TableHead>إلى</TableHead>
+                          <TableHead className="min-w-[120px]">الدفعة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">عدد الفترات الفارغة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">من</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">إلى</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {gapsData.map((g, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium">{g.groupName}</TableCell>
-                            <TableCell>{DAY_LABELS[g.day as keyof typeof DAY_LABELS] || g.day}</TableCell>
-                            <TableCell><Badge variant="secondary">{g.gapSize}</Badge></TableCell>
-                            <TableCell dir="ltr">{g.fromTime}</TableCell>
-                            <TableCell dir="ltr">{g.toTime}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{g.groupName}</TableCell>
+                            <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[g.day as keyof typeof DAY_LABELS] || g.day}</TableCell>
+                            <TableCell className="text-center"><Badge variant="secondary">{g.gapSize}</Badge></TableCell>
+                            <TableCell className="text-center" dir="ltr">{g.fromTime}</TableCell>
+                            <TableCell className="text-center" dir="ltr">{g.toTime}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
