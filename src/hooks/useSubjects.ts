@@ -73,9 +73,10 @@ export function useUpdateSubject() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast({ title: 'تم تحديث المادة بنجاح' });
+      logActivity('updated', 'subject', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث المادة', description: error.message, variant: 'destructive' });
