@@ -587,6 +587,9 @@ export default function TimetablePage() {
               isLoading={isLoadingSaved}
               onActivate={handleActivateSchedule}
               onDelete={(id) => deleteSavedSchedule.mutate(id)}
+              onExportCsv={() => handleExportCSV()}
+              onExportExcel={() => handleExportExcel()}
+              onDuplicate={(id, name) => duplicateSchedule.mutate({ scheduleId: id, newName: name })}
               disabled={!isActiveSubscription}
             />
           </div>
