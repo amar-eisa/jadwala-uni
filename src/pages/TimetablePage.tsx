@@ -868,6 +868,11 @@ export default function TimetablePage() {
           isPending={saveSchedule.isPending}
           groupName={selectedGroupId !== 'all' ? selectedGroupName : undefined}
         />
+        <ScheduleReportDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          report={scheduleReport}
+        />
       </div>
     </Layout>
   );
