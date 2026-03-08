@@ -89,6 +89,7 @@ export default function PendingApprovalPage() {
                 {checking ? 'جاري التحقق...' : 'تحقق من حالة الحساب'}
               </Button>
 
+              <Button 
                 variant="outline" 
                 className="w-full" 
                 onClick={signOut}
