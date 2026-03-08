@@ -239,7 +239,12 @@ export default function TimetablePage() {
   const { data: professors } = useProfessors();
   const { data: groups } = useStudentGroups();
   const { data: subjects } = useSubjects();
-  const generateSchedule = useGenerateSchedule();
+  const [scheduleReport, setScheduleReport] = useState<ScheduleReport | null>(null);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const generateSchedule = useGenerateSchedule((report) => {
+    setScheduleReport(report);
+    setReportDialogOpen(true);
+  });
   const clearSchedule = useClearSchedule();
   const moveEntry = useMoveScheduleEntry();
   const { exportToPdf, isExporting } = usePdfExport();
