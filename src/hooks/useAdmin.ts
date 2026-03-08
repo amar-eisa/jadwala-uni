@@ -112,7 +112,7 @@ export function useUpdateSubscription() {
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: 'admin' | 'user'; }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: 'admin' | 'user' | 'editor' | 'viewer'; }) => {
       const { data: existing } = await supabase
         .from('user_roles')
         .select('*')
