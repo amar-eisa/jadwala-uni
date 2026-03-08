@@ -89,6 +89,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            </Sentry.ErrorBoundary>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
