@@ -144,23 +144,23 @@ export default function ReportsPage() {
                     <Table className="mt-6">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>الأستاذ</TableHead>
-                          <TableHead>الساعات الأسبوعية</TableHead>
-                          <TableHead>المحاضرات المجدولة</TableHead>
-                          <TableHead>المواد</TableHead>
+                          <TableHead className="min-w-[140px]">الأستاذ</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">الساعات الأسبوعية</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">المحاضرات المجدولة</TableHead>
+                          <TableHead className="min-w-[180px]">المواد</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {workloadData.map(w => (
                           <TableRow key={w.name}>
-                            <TableCell className="font-medium">{w.name}</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{w.name}</TableCell>
+                            <TableCell className="text-center">
                               <Badge variant={w.totalHours > avgWorkload * 1.5 ? 'destructive' : w.totalHours < avgWorkload * 0.5 ? 'secondary' : 'default'}>
                                 {w.totalHours}
                               </Badge>
                             </TableCell>
-                            <TableCell>{w.lectureCount}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{w.subjects.join('، ')}</TableCell>
+                            <TableCell className="text-center">{w.lectureCount}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[250px]">{w.subjects.join('، ')}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -224,21 +224,21 @@ export default function ReportsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>القاعة</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>الفترات المستخدمة</TableHead>
-                      <TableHead>الفترات الفارغة</TableHead>
-                      <TableHead>نسبة الإشغال</TableHead>
+                      <TableHead className="min-w-[120px]">القاعة</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">الفترات المستخدمة</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">الفترات الفارغة</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">نسبة الإشغال</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {utilizationData.map(r => (
                       <TableRow key={r.name}>
-                        <TableCell className="font-medium">{r.name}</TableCell>
-                        <TableCell><Badge variant="outline">{r.type}</Badge></TableCell>
-                        <TableCell>{r.usedSlots}</TableCell>
-                        <TableCell>{r.freeSlots}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
+                        <TableCell className="text-center"><Badge variant="outline">{r.type}</Badge></TableCell>
+                        <TableCell className="text-center">{r.usedSlots}</TableCell>
+                        <TableCell className="text-center">{r.freeSlots}</TableCell>
+                        <TableCell className="text-center">
                           <Badge variant={r.percentage > 80 ? 'destructive' : r.percentage < 30 ? 'secondary' : 'default'}>
                             {r.percentage}%
                           </Badge>
@@ -278,23 +278,23 @@ export default function ReportsPage() {
                     <Table className="mt-6">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>المادة</TableHead>
-                          <TableHead>الدفعة</TableHead>
-                          <TableHead>الأستاذ</TableHead>
-                          <TableHead>الساعات المطلوبة</TableHead>
-                          <TableHead>المجدولة</TableHead>
-                          <TableHead>الحالة</TableHead>
+                          <TableHead className="min-w-[130px]">المادة</TableHead>
+                          <TableHead className="whitespace-nowrap">الدفعة</TableHead>
+                          <TableHead className="whitespace-nowrap">الأستاذ</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">الساعات المطلوبة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">المجدولة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {subjectAllocationData.map((s, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium">{s.subjectName}</TableCell>
-                            <TableCell>{s.groupName}</TableCell>
-                            <TableCell>{s.professorName}</TableCell>
-                            <TableCell>{s.requiredHours}</TableCell>
-                            <TableCell>{s.allocatedHours}</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{s.subjectName}</TableCell>
+                            <TableCell className="whitespace-nowrap">{s.groupName}</TableCell>
+                            <TableCell className="whitespace-nowrap">{s.professorName}</TableCell>
+                            <TableCell className="text-center">{s.requiredHours}</TableCell>
+                            <TableCell className="text-center">{s.allocatedHours}</TableCell>
+                            <TableCell className="text-center">
                               <Badge variant={s.isFullyScheduled ? 'default' : 'destructive'}>
                                 {s.isFullyScheduled ? 'مكتمل' : `ناقص ${s.deficit}`}
                               </Badge>
@@ -328,24 +328,24 @@ export default function ReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>النوع</TableHead>
-                          <TableHead>الاسم</TableHead>
-                          <TableHead>اليوم</TableHead>
-                          <TableHead>الوقت</TableHead>
-                          <TableHead>المواد المتعارضة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
+                          <TableHead className="min-w-[120px]">الاسم</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">الوقت</TableHead>
+                          <TableHead className="min-w-[160px]">المواد المتعارضة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {conflictsData.map((c, i) => (
                           <TableRow key={i}>
-                            <TableCell>
+                            <TableCell className="text-center">
                               <Badge variant="destructive">
                                 {c.type === 'professor' ? 'أستاذ' : 'قاعة'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-medium">{c.entityName}</TableCell>
-                            <TableCell>{DAY_LABELS[c.day as keyof typeof DAY_LABELS] || c.day}</TableCell>
-                            <TableCell dir="ltr">{c.time}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{c.entityName}</TableCell>
+                            <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[c.day as keyof typeof DAY_LABELS] || c.day}</TableCell>
+                            <TableCell className="text-center" dir="ltr">{c.time}</TableCell>
                             <TableCell className="text-xs">{c.subjects.join('، ')}</TableCell>
                           </TableRow>
                         ))}
@@ -368,21 +368,21 @@ export default function ReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>الدفعة</TableHead>
-                          <TableHead>اليوم</TableHead>
-                          <TableHead>عدد الفترات الفارغة</TableHead>
-                          <TableHead>من</TableHead>
-                          <TableHead>إلى</TableHead>
+                          <TableHead className="min-w-[120px]">الدفعة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">عدد الفترات الفارغة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">من</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">إلى</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {gapsData.map((g, i) => (
                           <TableRow key={i}>
-                            <TableCell className="font-medium">{g.groupName}</TableCell>
-                            <TableCell>{DAY_LABELS[g.day as keyof typeof DAY_LABELS] || g.day}</TableCell>
-                            <TableCell><Badge variant="secondary">{g.gapSize}</Badge></TableCell>
-                            <TableCell dir="ltr">{g.fromTime}</TableCell>
-                            <TableCell dir="ltr">{g.toTime}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{g.groupName}</TableCell>
+                            <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[g.day as keyof typeof DAY_LABELS] || g.day}</TableCell>
+                            <TableCell className="text-center"><Badge variant="secondary">{g.gapSize}</Badge></TableCell>
+                            <TableCell className="text-center" dir="ltr">{g.fromTime}</TableCell>
+                            <TableCell className="text-center" dir="ltr">{g.toTime}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
