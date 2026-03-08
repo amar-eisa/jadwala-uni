@@ -562,7 +562,7 @@ export type Database = {
       is_subscription_active: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user" | "student"
+      app_role: "admin" | "user" | "student" | "editor" | "viewer"
       day_of_week:
         | "sunday"
         | "monday"
@@ -700,7 +700,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "student"],
+      app_role: ["admin", "user", "student", "editor", "viewer"],
       day_of_week: [
         "sunday",
         "monday",
