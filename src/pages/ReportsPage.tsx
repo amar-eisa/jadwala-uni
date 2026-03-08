@@ -325,14 +325,14 @@ export default function ReportsPage() {
                       <p className="text-muted-foreground">🎉 لا توجد تعارضات! الجدول سليم.</p>
                     </div>
                   ) : (
-                    <Table>
+                    <Table dir="rtl">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="text-center whitespace-nowrap">النوع</TableHead>
-                          <TableHead className="min-w-[120px]">الاسم</TableHead>
+                          <TableHead className="min-w-[120px] text-right">الاسم</TableHead>
                           <TableHead className="text-center whitespace-nowrap">اليوم</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الوقت</TableHead>
-                          <TableHead className="min-w-[160px]">المواد المتعارضة</TableHead>
+                          <TableHead className="min-w-[160px] text-right">المواد المتعارضة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -343,10 +343,10 @@ export default function ReportsPage() {
                                 {c.type === 'professor' ? 'أستاذ' : 'قاعة'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-medium whitespace-nowrap">{c.entityName}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{c.entityName}</TableCell>
                             <TableCell className="text-center whitespace-nowrap">{DAY_LABELS[c.day as keyof typeof DAY_LABELS] || c.day}</TableCell>
                             <TableCell className="text-center" dir="ltr">{c.time}</TableCell>
-                            <TableCell className="text-xs">{c.subjects.join('، ')}</TableCell>
+                            <TableCell className="text-xs text-right">{c.subjects.join('، ')}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
