@@ -62,9 +62,10 @@ export function useUpdateStudentGroup() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['student_groups'] });
       toast({ title: 'تم تحديث المجموعة بنجاح' });
+      logActivity('updated', 'group', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث المجموعة', description: error.message, variant: 'destructive' });
