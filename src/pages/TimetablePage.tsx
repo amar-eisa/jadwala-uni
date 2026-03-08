@@ -26,7 +26,7 @@ import { useProfessors } from '@/hooks/useProfessors';
 import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { DayOfWeek, DAY_LABELS, ScheduleEntry, Room } from '@/types/database';
-import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen, FolderOpen, BookOpen, GraduationCap, MapPin } from 'lucide-react';
+import { Wand2, Trash2, Filter, FileDown, GripVertical, Clock, Users, Save, AlertCircle, Sparkles, RefreshCw, FileText, DoorOpen, FolderOpen, BookOpen, GraduationCap, MapPin, FileSpreadsheet, History } from 'lucide-react';
 import { RichTooltip } from '@/components/ui/rich-tooltip';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
