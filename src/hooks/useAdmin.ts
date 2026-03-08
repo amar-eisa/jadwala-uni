@@ -72,7 +72,7 @@ export function useAdminUsers() {
           full_name: profile.full_name,
           phone: profile.phone ?? null,
           created_at: profile.created_at,
-          role: (userRole?.role as 'admin' | 'user') || 'user',
+          role: (userRole?.role as 'admin' | 'user' | 'editor' | 'viewer') || 'user',
           subscription: subscription ? {
             id: subscription.id,
             plan_name: subscription.plan_name,

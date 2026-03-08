@@ -290,10 +290,12 @@ export function UserManagement() {
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="الدور" />
           </SelectTrigger>
-          <SelectContent>
+           <SelectContent>
             <SelectItem value="all">كل الأدوار</SelectItem>
             <SelectItem value="admin">مدير</SelectItem>
             <SelectItem value="user">مستخدم</SelectItem>
+            <SelectItem value="editor">محرر</SelectItem>
+            <SelectItem value="viewer">مشاهد فقط</SelectItem>
           </SelectContent>
         </Select>
       </div>
