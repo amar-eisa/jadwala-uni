@@ -142,18 +142,18 @@ export default function ProfessorsPage() {
                     </div>
                   ))}
                 </div>
-              ) : professors?.length === 0 ? (
+              ) : filteredProfessors?.length === 0 ? (
                 <EmptyStateIllustration
                   type="professors"
-                  title="لا يوجد دكاترة بعد"
-                  description="ابدأ بإضافة أعضاء هيئة التدريس لربطهم بالمواد الدراسية"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا يوجد دكاترة بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة أعضاء هيئة التدريس لربطهم بالمواد الدراسية"}
                 />
               ) : (
-                <div className="table-enhanced">
+                <div className="overflow-x-auto table-enhanced">
                   <Table>
                     <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-[50px]">#</TableHead><TableHead>الاسم</TableHead><TableHead className="w-[180px]">إجراءات</TableHead></TableRow></TableHeader>
                     <TableBody>
-                      {professors?.map((professor, index) => (
+                      {filteredProfessors?.map((professor, index) => (
                         <TableRow key={professor.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-medium">

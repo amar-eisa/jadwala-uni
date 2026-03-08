@@ -216,11 +216,11 @@ export default function SubjectsPage() {
                     </div>
                   ))}
                 </div>
-              ) : subjects?.length === 0 ? (
+              ) : filteredSubjects?.length === 0 ? (
                 <EmptyStateIllustration
                   type="subjects"
-                  title="لا توجد مواد بعد"
-                  description="ابدأ بإضافة المواد الدراسية وربطها بالدكاترة والمجموعات"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا توجد مواد بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة المواد الدراسية وربطها بالدكاترة والمجموعات"}
                 />
               ) : (
                 <div className="overflow-x-auto table-enhanced">
@@ -234,7 +234,7 @@ export default function SubjectsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subjects?.map((subject, index) => (
+                      {filteredSubjects?.map((subject, index) => (
                         <TableRow key={subject.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-mono text-sm"><Badge variant="outline" className="font-mono rounded-xl">{subject.code}</Badge></TableCell>

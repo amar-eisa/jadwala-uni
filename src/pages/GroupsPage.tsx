@@ -139,18 +139,18 @@ export default function GroupsPage() {
                     </div>
                   ))}
                 </div>
-              ) : groups?.length === 0 ? (
+              ) : filteredGroups?.length === 0 ? (
                 <EmptyStateIllustration
                   type="groups"
-                  title="لا توجد مجموعات بعد"
-                  description="ابدأ بإضافة مجموعات الطلاب لتنظيم الجداول حسب الدفعات"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا توجد مجموعات بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة مجموعات الطلاب لتنظيم الجداول حسب الدفعات"}
                 />
               ) : (
-                <div className="table-enhanced">
+                <div className="overflow-x-auto table-enhanced">
                   <Table>
                     <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-[50px]">#</TableHead><TableHead>الاسم</TableHead><TableHead className="w-[100px]">إجراءات</TableHead></TableRow></TableHeader>
                     <TableBody>
-                      {groups?.map((group, index) => (
+                      {filteredGroups?.map((group, index) => (
                         <TableRow key={group.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-medium">

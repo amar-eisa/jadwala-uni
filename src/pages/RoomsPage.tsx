@@ -197,7 +197,7 @@ export default function RoomsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rooms?.map((room, index) => (
+                      {filteredRooms?.map((room, index) => (
                         <TableRow key={room.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-medium">

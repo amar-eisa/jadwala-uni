@@ -240,6 +240,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 </div>
               </div>
+              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="sm"
