@@ -34,9 +34,12 @@ const welcomeMessages = [
 
 export default function StudentAuthPage() {
   const navigate = useNavigate();
-  const { user, signIn } = useAuth();
+  const { user, signIn, lockoutRemaining } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isLockedOut = lockoutRemaining > 0;
+  const lockoutMinutes = Math.ceil(lockoutRemaining / 60000);
+  const lockoutSeconds = Math.ceil((lockoutRemaining % 60000) / 1000);
   const [welcomeIndex, setWelcomeIndex] = useState(0);
 
   const [loginEmail, setLoginEmail] = useState('');
