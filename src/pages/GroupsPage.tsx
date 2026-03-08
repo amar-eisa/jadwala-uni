@@ -13,6 +13,7 @@ import {
 import { useStudentGroups, useCreateStudentGroup, useUpdateStudentGroup, useDeleteStudentGroup } from '@/hooks/useStudentGroups';
 import { Plus, Pencil, Trash2, Users, AlertTriangle, UserCircle } from 'lucide-react';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
+import { SearchInput } from '@/components/SearchInput';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -37,6 +38,12 @@ export default function GroupsPage() {
   const [editingGroup, setEditingGroup] = useState<{ id: string; name: string } | null>(null);
   const [deletingGroup, setDeletingGroup] = useState<{ id: string; name: string } | null>(null);
   const [newName, setNewName] = useState('');
+  const [search, setSearch] = useState('');
+
+  const filteredGroups = groups?.filter(g => {
+    if (!search) return true;
+    return g.name.toLowerCase().includes(search.toLowerCase());
+  });
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
@@ -111,8 +118,15 @@ export default function GroupsPage() {
         <motion.div variants={item}>
           <Card className="card-glass border-0">
             <CardHeader>
-              <CardTitle className="text-base">قائمة المجموعات</CardTitle>
-              <CardDescription className="text-xs">جميع مجموعات الطلاب المسجلة في النظام</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base">قائمة المجموعات</CardTitle>
+                  <CardDescription className="text-xs">جميع مجموعات الطلاب المسجلة في النظام</CardDescription>
+                </div>
+                <div className="w-full sm:w-64">
+                  <SearchInput value={search} onChange={setSearch} placeholder="بحث في المجموعات..." />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -125,18 +139,18 @@ export default function GroupsPage() {
                     </div>
                   ))}
                 </div>
-              ) : groups?.length === 0 ? (
+              ) : filteredGroups?.length === 0 ? (
                 <EmptyStateIllustration
                   type="groups"
-                  title="لا توجد مجموعات بعد"
-                  description="ابدأ بإضافة مجموعات الطلاب لتنظيم الجداول حسب الدفعات"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا توجد مجموعات بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة مجموعات الطلاب لتنظيم الجداول حسب الدفعات"}
                 />
               ) : (
-                <div className="table-enhanced">
+                <div className="overflow-x-auto table-enhanced">
                   <Table>
                     <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-[50px]">#</TableHead><TableHead>الاسم</TableHead><TableHead className="w-[100px]">إجراءات</TableHead></TableRow></TableHeader>
                     <TableBody>
-                      {groups?.map((group, index) => (
+                      {filteredGroups?.map((group, index) => (
                         <TableRow key={group.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-medium">

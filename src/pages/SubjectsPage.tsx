@@ -21,6 +21,7 @@ import { Plus, Pencil, Trash2, BookOpen, AlertTriangle, FlaskConical, FileText, 
 import { SubjectType, SUBJECT_TYPE_LABELS } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
+import { SearchInput } from '@/components/SearchInput';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -50,6 +51,15 @@ export default function SubjectsPage() {
   const [deletingSubject, setDeletingSubject] = useState<{ id: string; name: string } | null>(null);
   const [newSubject, setNewSubject] = useState({ 
     name: '', professor_id: '', group_id: '', type: 'theory' as SubjectType, weekly_hours: 2
+  });
+  const [search, setSearch] = useState('');
+
+  const filteredSubjects = subjects?.filter(s => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) ||
+      s.professor?.name?.toLowerCase().includes(q) || s.group?.name?.toLowerCase().includes(q) ||
+      SUBJECT_TYPE_LABELS[s.type].includes(q);
   });
 
   const handleAdd = async () => {
@@ -184,8 +194,15 @@ export default function SubjectsPage() {
         <motion.div variants={item}>
           <Card className="card-glass border-0">
             <CardHeader>
-              <CardTitle className="text-base">قائمة المواد</CardTitle>
-              <CardDescription className="text-xs">جميع المواد الدراسية المسجلة في النظام</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base">قائمة المواد</CardTitle>
+                  <CardDescription className="text-xs">جميع المواد الدراسية المسجلة في النظام</CardDescription>
+                </div>
+                <div className="w-full sm:w-64">
+                  <SearchInput value={search} onChange={setSearch} placeholder="بحث في المواد..." />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -199,11 +216,11 @@ export default function SubjectsPage() {
                     </div>
                   ))}
                 </div>
-              ) : subjects?.length === 0 ? (
+              ) : filteredSubjects?.length === 0 ? (
                 <EmptyStateIllustration
                   type="subjects"
-                  title="لا توجد مواد بعد"
-                  description="ابدأ بإضافة المواد الدراسية وربطها بالدكاترة والمجموعات"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا توجد مواد بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة المواد الدراسية وربطها بالدكاترة والمجموعات"}
                 />
               ) : (
                 <div className="overflow-x-auto table-enhanced">
@@ -217,7 +234,7 @@ export default function SubjectsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subjects?.map((subject, index) => (
+                      {filteredSubjects?.map((subject, index) => (
                         <TableRow key={subject.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-mono text-sm"><Badge variant="outline" className="font-mono rounded-xl">{subject.code}</Badge></TableCell>

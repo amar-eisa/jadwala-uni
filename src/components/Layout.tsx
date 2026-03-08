@@ -16,7 +16,8 @@ import {
   Settings,
   Phone,
   Mail,
-  BarChart3
+  BarChart3,
+  Activity
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import { useIsAdmin } from '@/hooks/useAdmin';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
@@ -77,6 +79,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     ...navigation,
     { name: 'التقارير', href: '/reports', icon: BarChart3, countKey: null },
+    { name: 'سجل النشاطات', href: '/activity-log', icon: Activity, countKey: null },
     { name: 'الإعدادات', href: '/settings', icon: Settings, countKey: null },
     ...(isAdmin ? [{ name: 'الإدارة', href: '/admin', icon: Shield, countKey: null }] : []),
   ];
@@ -237,6 +240,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 </div>
               </div>
+              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="sm"

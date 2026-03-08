@@ -19,6 +19,7 @@ import { RoomType, ROOM_TYPE_LABELS } from '@/types/database';
 import { Plus, Pencil, Trash2, DoorOpen, FlaskConical, Presentation, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
+import { SearchInput } from '@/components/SearchInput';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -43,6 +44,13 @@ export default function RoomsPage() {
   const [editingRoom, setEditingRoom] = useState<{ id: string; name: string; type: RoomType } | null>(null);
   const [deletingRoom, setDeletingRoom] = useState<{ id: string; name: string } | null>(null);
   const [newRoom, setNewRoom] = useState({ name: '', type: 'lecture' as RoomType });
+  const [search, setSearch] = useState('');
+
+  const filteredRooms = rooms?.filter(room => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return room.name.toLowerCase().includes(s) || ROOM_TYPE_LABELS[room.type].includes(s);
+  });
 
   const handleAdd = async () => {
     if (!newRoom.name.trim()) return;
@@ -150,8 +158,15 @@ export default function RoomsPage() {
         <motion.div variants={item}>
           <Card className="card-glass border-0">
             <CardHeader>
-              <CardTitle className="text-base">قائمة القاعات</CardTitle>
-              <CardDescription className="text-xs">جميع القاعات والمعامل المسجلة في النظام</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base">قائمة القاعات</CardTitle>
+                  <CardDescription className="text-xs">جميع القاعات والمعامل المسجلة في النظام</CardDescription>
+                </div>
+                <div className="w-full sm:w-64">
+                  <SearchInput value={search} onChange={setSearch} placeholder="بحث في القاعات..." />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -164,14 +179,14 @@ export default function RoomsPage() {
                     </div>
                   ))}
                 </div>
-              ) : rooms?.length === 0 ? (
+              ) : filteredRooms?.length === 0 ? (
                 <EmptyStateIllustration
                   type="rooms"
-                  title="لا توجد قاعات بعد"
-                  description="ابدأ بإضافة القاعات والمعامل لتنظيم جداولك الدراسية"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا توجد قاعات بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة القاعات والمعامل لتنظيم جداولك الدراسية"}
                 />
               ) : (
-                <div className="table-enhanced">
+                <div className="overflow-x-auto table-enhanced">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
@@ -182,7 +197,7 @@ export default function RoomsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rooms?.map((room, index) => (
+                      {filteredRooms?.map((room, index) => (
                         <TableRow key={room.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-medium">

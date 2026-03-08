@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, CalendarOff, GraduationCap, AlertTriangle, User }
 import { ProfessorUnavailabilityDialog } from '@/components/ProfessorUnavailabilityDialog';
 import { cn } from '@/lib/utils';
 import { EmptyStateIllustration } from '@/components/ui/empty-state-illustration';
+import { SearchInput } from '@/components/SearchInput';
 import { useIsActiveSubscription } from '@/hooks/useSubscription';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { motion } from 'framer-motion';
@@ -40,6 +41,12 @@ export default function ProfessorsPage() {
   const [deletingProfessor, setDeletingProfessor] = useState<{ id: string; name: string } | null>(null);
   const [unavailabilityProfessor, setUnavailabilityProfessor] = useState<{ id: string; name: string } | null>(null);
   const [newName, setNewName] = useState('');
+  const [search, setSearch] = useState('');
+
+  const filteredProfessors = professors?.filter(p => {
+    if (!search) return true;
+    return p.name.toLowerCase().includes(search.toLowerCase());
+  });
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
@@ -114,8 +121,15 @@ export default function ProfessorsPage() {
         <motion.div variants={item}>
           <Card className="card-glass border-0">
             <CardHeader>
-              <CardTitle className="text-base">قائمة الدكاترة</CardTitle>
-              <CardDescription className="text-xs">جميع أعضاء هيئة التدريس المسجلين في النظام</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base">قائمة الدكاترة</CardTitle>
+                  <CardDescription className="text-xs">جميع أعضاء هيئة التدريس المسجلين في النظام</CardDescription>
+                </div>
+                <div className="w-full sm:w-64">
+                  <SearchInput value={search} onChange={setSearch} placeholder="بحث في الدكاترة..." />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -128,18 +142,18 @@ export default function ProfessorsPage() {
                     </div>
                   ))}
                 </div>
-              ) : professors?.length === 0 ? (
+              ) : filteredProfessors?.length === 0 ? (
                 <EmptyStateIllustration
                   type="professors"
-                  title="لا يوجد دكاترة بعد"
-                  description="ابدأ بإضافة أعضاء هيئة التدريس لربطهم بالمواد الدراسية"
+                  title={search ? "لا توجد نتائج مطابقة" : "لا يوجد دكاترة بعد"}
+                  description={search ? "جرّب تغيير كلمة البحث" : "ابدأ بإضافة أعضاء هيئة التدريس لربطهم بالمواد الدراسية"}
                 />
               ) : (
-                <div className="table-enhanced">
+                <div className="overflow-x-auto table-enhanced">
                   <Table>
                     <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-[50px]">#</TableHead><TableHead>الاسم</TableHead><TableHead className="w-[180px]">إجراءات</TableHead></TableRow></TableHeader>
                     <TableBody>
-                      {professors?.map((professor, index) => (
+                      {filteredProfessors?.map((professor, index) => (
                         <TableRow key={professor.id}>
                           <TableCell><div className="row-number">{index + 1}</div></TableCell>
                           <TableCell className="font-medium">
