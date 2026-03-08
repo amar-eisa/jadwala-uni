@@ -823,6 +823,9 @@ export default function TimetablePage() {
           </CardContent>
         </Card>
 
+        {/* Activity Log */}
+        <ActivityLogPanel logs={activityLogs} isLoading={isLoadingLogs} />
+
         {/* Room Selection Dialog */}
         <Dialog open={roomSelectDialog?.open || false} onOpenChange={(open) => !open && setRoomSelectDialog(null)}>
           <DialogContent>
