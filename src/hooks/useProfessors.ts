@@ -62,9 +62,10 @@ export function useUpdateProfessor() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['professors'] });
       toast({ title: 'تم تحديث الدكتور بنجاح' });
+      logActivity('updated', 'professor', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في تحديث الدكتور', description: error.message, variant: 'destructive' });
