@@ -343,11 +343,26 @@ serve(async (req) => {
             return a.daysScheduled - b.daysScheduled;
           });
         
+        let scheduledInDay = 0;
         for (const candidate of candidateSessions) {
           const session = candidate.session;
           const subject = session.subject;
           
-          const requiredRoomType = subject.type === 'theory' ? 'lecture' : 'lab';
+          // Check group daily cap
+          const groupDayKey = `${subject.group_id}-${day}`;
+          if ((groupDaySessions[groupDayKey] || 0) >= MAX_GROUP_SESSIONS_PER_DAY) continue;
+          
+          // Prefer balancing theory/practical per day
+          const isTheory = subject.type === 'theory';
+          const theoryCount = dayTheoryCount[day];
+          const practicalCount = dayPracticalCount[day];
+          // Skip if this type is overloaded compared to the other (soft constraint, allow in later rounds)
+          if (round < 30 && theoryCount > 0 && practicalCount > 0) {
+            const ratio = isTheory ? theoryCount / (practicalCount || 1) : practicalCount / (theoryCount || 1);
+            if (ratio > 3) continue; // too imbalanced, try another session
+          }
+          
+          const requiredRoomType = isTheory ? 'lecture' : 'lab';
           const compatibleRooms = rooms.filter(r => r.type === requiredRoomType);
           
           if (compatibleRooms.length === 0) continue;
@@ -370,14 +385,14 @@ serve(async (req) => {
               const roomKey = `${room.id}-${timeSlot.id}`;
               if (occupiedRoomSlots.has(roomKey)) continue;
               
-              // Schedule the class with user_id, group_id, and schedule_id
+              // Schedule the class
               scheduleEntries.push({
                 room_id: room.id,
                 time_slot_id: timeSlot.id,
                 subject_id: subject.id,
                 user_id: userId,
                 group_id: subject.group_id,
-                schedule_id: schedule_id || null,  // Use provided schedule_id or null for draft
+                schedule_id: schedule_id || null,
               });
               
               occupiedRoomSlots.add(roomKey);
@@ -385,6 +400,8 @@ serve(async (req) => {
               occupiedGroupSlots.add(groupKey);
               roomUsage[room.id]++;
               sessionsPerDay[day]++;
+              groupDaySessions[groupDayKey] = (groupDaySessions[groupDayKey] || 0) + 1;
+              if (isTheory) dayTheoryCount[day]++; else dayPracticalCount[day]++;
               
               if (!subjectScheduledDays[subject.id]) {
                 subjectScheduledDays[subject.id] = new Set();
@@ -398,14 +415,14 @@ serve(async (req) => {
               
               totalSessionsScheduled++;
               scheduledThisRound++;
+              scheduledInDay++;
               scheduled = true;
               break;
             }
             
             if (scheduled) break;
           }
-          
-          if (scheduled) break;
+          // No break here — allow multiple sessions per day per round
         }
       }
       
