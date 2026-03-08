@@ -38,6 +38,8 @@ export function useUserSubscription() {
       return data as Subscription | null;
     },
     enabled: !!user,
+    retry: 1,
+    staleTime: 30000,
   });
 }
 
