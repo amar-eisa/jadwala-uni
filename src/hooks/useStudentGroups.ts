@@ -36,9 +36,10 @@ export function useCreateStudentGroup() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['student_groups'] });
       toast({ title: 'تم إضافة المجموعة بنجاح' });
+      logActivity('created', 'group', data.id, { name: data.name });
     },
     onError: (error) => {
       toast({ title: 'خطأ في إضافة المجموعة', description: error.message, variant: 'destructive' });
