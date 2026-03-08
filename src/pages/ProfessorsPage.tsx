@@ -41,6 +41,12 @@ export default function ProfessorsPage() {
   const [deletingProfessor, setDeletingProfessor] = useState<{ id: string; name: string } | null>(null);
   const [unavailabilityProfessor, setUnavailabilityProfessor] = useState<{ id: string; name: string } | null>(null);
   const [newName, setNewName] = useState('');
+  const [search, setSearch] = useState('');
+
+  const filteredProfessors = professors?.filter(p => {
+    if (!search) return true;
+    return p.name.toLowerCase().includes(search.toLowerCase());
+  });
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
