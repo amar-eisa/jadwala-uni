@@ -141,26 +141,26 @@ export default function ReportsPage() {
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                    <Table className="mt-6">
+                    <Table dir="rtl" className="mt-6">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[140px]">الأستاذ</TableHead>
+                          <TableHead className="min-w-[140px] text-right">الأستاذ</TableHead>
                           <TableHead className="text-center whitespace-nowrap">الساعات الأسبوعية</TableHead>
                           <TableHead className="text-center whitespace-nowrap">المحاضرات المجدولة</TableHead>
-                          <TableHead className="min-w-[180px]">المواد</TableHead>
+                          <TableHead className="min-w-[180px] text-right">المواد</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {workloadData.map(w => (
                           <TableRow key={w.name}>
-                            <TableCell className="font-medium whitespace-nowrap">{w.name}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap text-right">{w.name}</TableCell>
                             <TableCell className="text-center">
                               <Badge variant={w.totalHours > avgWorkload * 1.5 ? 'destructive' : w.totalHours < avgWorkload * 0.5 ? 'secondary' : 'default'}>
                                 {w.totalHours}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-center">{w.lectureCount}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground max-w-[250px]">{w.subjects.join('، ')}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate text-right">{w.subjects.join('، ')}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
