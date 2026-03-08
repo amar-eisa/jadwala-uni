@@ -36,12 +36,12 @@ export default function AdminPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-primary/10">
-            <Shield className="h-8 w-8 text-primary" />
+          <div className="p-2.5 md:p-3 rounded-xl bg-primary/10">
+            <Shield className="h-6 w-6 md:h-8 md:w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">لوحة الإدارة</h1>
-            <p className="text-muted-foreground">إدارة المستخدمين والاشتراكات</p>
+            <h1 className="text-xl md:text-3xl font-bold">لوحة الإدارة</h1>
+            <p className="text-sm md:text-base text-muted-foreground">إدارة المستخدمين والاشتراكات</p>
           </div>
         </div>
 
