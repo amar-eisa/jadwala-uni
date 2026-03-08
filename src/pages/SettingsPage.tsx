@@ -8,6 +8,7 @@ import { useUserSettings, useUpdateUserSettings, useUploadUniversityLogo } from 
 import { Settings, Upload, Building2, Loader2, ImageIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { BackupRestore } from '@/components/BackupRestore';
 
 const container = {
   hidden: { opacity: 0 },
