@@ -256,9 +256,33 @@ export default function StudentDashboard() {
                   مجموعة: {groupName}
                 </p>
               </div>
-              <Button variant="outline" onClick={() => setSelectedGroup(null)}>
-                تغيير المجموعة
-              </Button>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" disabled={isImageExporting || isPdfExporting}>
+                      {(isImageExporting || isPdfExporting) ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      ) : (
+                        <Download className="h-4 w-4 ml-2" />
+                      )}
+                      تحميل الجدول
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={exportAsImage}>
+                      <Image className="h-4 w-4 ml-2" />
+                      تحميل كصورة PNG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportAsPdf}>
+                      <FileText className="h-4 w-4 ml-2" />
+                      تحميل كـ PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="outline" onClick={() => setSelectedGroup(null)}>
+                  تغيير المجموعة
+                </Button>
+              </div>
             </div>
 
             {entriesLoading || timeSlotsLoading ? (
