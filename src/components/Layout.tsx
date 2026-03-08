@@ -32,6 +32,7 @@ import { useIsAdmin } from '@/hooks/useAdmin';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
