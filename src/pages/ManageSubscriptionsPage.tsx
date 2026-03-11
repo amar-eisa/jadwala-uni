@@ -427,7 +427,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
                         <td className="p-2"><span dir="ltr" className="text-xs">{user.phone || '-'}</span></td>
                         <td className="p-2">{user.subscription && <Badge variant={STATUS_LABELS[user.subscription.status]?.variant || 'default'} className="text-xs">{STATUS_LABELS[user.subscription.status]?.label || user.subscription.status}</Badge>}</td>
                         <td className="p-2 text-xs">{PLAN_OPTIONS.find(p => p.value === user.subscription?.plan_name)?.label || user.subscription?.plan_name || '-'}</td>
-                        <td className="p-2">
+                        <td className="p-2 text-xs text-muted-foreground">{user.subscription?.university_name || <span className="text-muted-foreground/50">—</span>}</td>
                           <Select value={user.role} onValueChange={(v) => handleRoleChange(user.id, v)}>
                             <SelectTrigger className="h-7 w-[90px] text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
