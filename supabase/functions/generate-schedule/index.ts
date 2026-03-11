@@ -423,7 +423,8 @@ serve(async (req) => {
             
             if (scheduled) break;
           }
-          // No break here — allow multiple sessions per day per round
+          // Round-robin: only one session per day per round for even distribution
+          if (scheduled) break;
         }
       }
       
