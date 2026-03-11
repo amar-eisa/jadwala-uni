@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
             currency: subscription.currency,
             start_date: subscription.start_date,
             end_date: subscription.end_date,
+            university_name: subscription.university_name || null,
           } : null,
         }
       })

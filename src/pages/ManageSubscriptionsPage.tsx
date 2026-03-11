@@ -55,6 +55,7 @@ interface UserData {
     currency: string;
     start_date: string | null;
     end_date: string | null;
+    university_name: string | null;
   } | null;
 }
 
