@@ -421,9 +421,10 @@ export default function TimetablePage() {
     // Exit viewing mode when generating new schedule
     setViewingScheduleId(null);
     const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
+    // Always generate as draft (schedule_id = null) so saving can assign the new ID
     await generateSchedule.mutateAsync({ 
       groupId, 
-      scheduleId: activeSchedule?.id 
+      scheduleId: null 
     });
     setHasDraft(true);
     toast({
