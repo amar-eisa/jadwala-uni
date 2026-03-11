@@ -232,8 +232,9 @@ export default function TimetablePage() {
     return anyActive;
   }, [savedSchedules, selectedGroupId]);
   
-  // Fetch schedule entries based on active schedule
-  const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
+  // Fetch schedule entries - show draft entries when a new schedule was just generated
+  const currentScheduleId = hasDraft ? null : activeSchedule?.id;
+  const { data: scheduleEntries, isLoading } = useScheduleEntries(currentScheduleId);
   const { data: timeSlots } = useTimeSlots();
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
@@ -421,9 +422,10 @@ export default function TimetablePage() {
     // Exit viewing mode when generating new schedule
     setViewingScheduleId(null);
     const groupId = selectedGroupId === 'all' ? undefined : selectedGroupId;
+    // Always generate as draft (schedule_id = null) so saving can assign the new ID
     await generateSchedule.mutateAsync({ 
       groupId, 
-      scheduleId: activeSchedule?.id 
+      scheduleId: null 
     });
     setHasDraft(true);
     toast({
