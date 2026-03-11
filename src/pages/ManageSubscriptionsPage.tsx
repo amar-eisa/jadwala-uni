@@ -34,7 +34,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Loader2, Check, X, Trash2, CalendarIcon, Phone, Search, Shield, Lock, Edit, Users, Clock } from 'lucide-react';
+import { Loader2, Check, X, Trash2, CalendarIcon, Phone, Search, Shield, Lock, Edit, Users, Clock, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 
