@@ -158,7 +158,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
 
   // Edit dialog
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
-  const [editForm, setEditForm] = useState({ plan_name: '', status: '', price: 0, start_date: null as Date | null, end_date: null as Date | null });
+  const [editForm, setEditForm] = useState({ plan_name: '', status: '', price: 0, start_date: null as Date | null, end_date: null as Date | null, university_name: '' });
 
   // Approve dialog
   const [approvingUser, setApprovingUser] = useState<UserData | null>(null);
