@@ -232,8 +232,9 @@ export default function TimetablePage() {
     return anyActive;
   }, [savedSchedules, selectedGroupId]);
   
-  // Fetch schedule entries based on active schedule
-  const { data: scheduleEntries, isLoading } = useScheduleEntries(activeSchedule?.id);
+  // Fetch schedule entries - show draft entries when a new schedule was just generated
+  const currentScheduleId = hasDraft ? null : activeSchedule?.id;
+  const { data: scheduleEntries, isLoading } = useScheduleEntries(currentScheduleId);
   const { data: timeSlots } = useTimeSlots();
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
