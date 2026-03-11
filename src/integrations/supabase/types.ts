@@ -440,6 +440,7 @@ export type Database = {
           price: number
           start_date: string | null
           status: string
+          university_name: string | null
           updated_at: string | null
           user_id: string
         }
@@ -452,6 +453,7 @@ export type Database = {
           price?: number
           start_date?: string | null
           status?: string
+          university_name?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -464,6 +466,7 @@ export type Database = {
           price?: number
           start_date?: string | null
           status?: string
+          university_name?: string | null
           updated_at?: string | null
           user_id?: string
         }

@@ -34,7 +34,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Loader2, Check, X, Trash2, CalendarIcon, Phone, Search, Shield, Lock, Edit, Users, Clock } from 'lucide-react';
+import { Loader2, Check, X, Trash2, CalendarIcon, Phone, Search, Shield, Lock, Edit, Users, Clock, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -55,6 +55,7 @@ interface UserData {
     currency: string;
     start_date: string | null;
     end_date: string | null;
+    university_name: string | null;
   } | null;
 }
 
@@ -157,7 +158,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
 
   // Edit dialog
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
-  const [editForm, setEditForm] = useState({ plan_name: '', status: '', price: 0, start_date: null as Date | null, end_date: null as Date | null });
+  const [editForm, setEditForm] = useState({ plan_name: '', status: '', price: 0, start_date: null as Date | null, end_date: null as Date | null, university_name: '' });
 
   // Approve dialog
   const [approvingUser, setApprovingUser] = useState<UserData | null>(null);
@@ -234,6 +235,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
           price: editForm.price,
           start_date: editForm.start_date?.toISOString() || null,
           end_date: editForm.end_date?.toISOString() || null,
+          university_name: editForm.university_name || null,
         },
       });
       toast.success('تم تحديث الاشتراك');
@@ -261,6 +263,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
       price: user.subscription?.price || 0,
       start_date: user.subscription?.start_date ? new Date(user.subscription.start_date) : null,
       end_date: user.subscription?.end_date ? new Date(user.subscription.end_date) : null,
+      university_name: user.subscription?.university_name || '',
     });
   };
 
@@ -378,6 +381,9 @@ function ManagementDashboard({ secret }: { secret: string }) {
                       <p className="text-sm text-muted-foreground">{user.email}</p>
                       {user.phone && <p className="text-sm text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /><span dir="ltr">{user.phone}</span></p>}
                     </div>
+                    {user.subscription?.university_name && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Building2 className="h-3 w-3" />{user.subscription.university_name}</p>
+                    )}
                     <div className="flex flex-wrap gap-1.5">
                       {user.subscription && <Badge variant={STATUS_LABELS[user.subscription.status]?.variant || 'default'}>{STATUS_LABELS[user.subscription.status]?.label || user.subscription.status}</Badge>}
                       <Badge variant="outline">{PLAN_OPTIONS.find(p => p.value === user.subscription?.plan_name)?.label || user.subscription?.plan_name}</Badge>
@@ -408,6 +414,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
                       <th className="text-right p-2 font-medium">الهاتف</th>
                       <th className="text-right p-2 font-medium">الحالة</th>
                       <th className="text-right p-2 font-medium">الخطة</th>
+                      <th className="text-right p-2 font-medium">الجامعة</th>
                       <th className="text-right p-2 font-medium">الدور</th>
                       <th className="text-right p-2 font-medium">التاريخ</th>
                       <th className="text-right p-2 font-medium">إجراءات</th>
@@ -423,6 +430,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
                         <td className="p-2"><span dir="ltr" className="text-xs">{user.phone || '-'}</span></td>
                         <td className="p-2">{user.subscription && <Badge variant={STATUS_LABELS[user.subscription.status]?.variant || 'default'} className="text-xs">{STATUS_LABELS[user.subscription.status]?.label || user.subscription.status}</Badge>}</td>
                         <td className="p-2 text-xs">{PLAN_OPTIONS.find(p => p.value === user.subscription?.plan_name)?.label || user.subscription?.plan_name || '-'}</td>
+                        <td className="p-2 text-xs text-muted-foreground">{user.subscription?.university_name || '—'}</td>
                         <td className="p-2">
                           <Select value={user.role} onValueChange={(v) => handleRoleChange(user.id, v)}>
                             <SelectTrigger className="h-7 w-[90px] text-xs"><SelectValue /></SelectTrigger>
@@ -499,6 +507,10 @@ function ManagementDashboard({ secret }: { secret: string }) {
             <div className="space-y-2">
               <Label>السعر</Label>
               <Input type="number" value={editForm.price} onChange={(e) => setEditForm(f => ({ ...f, price: Number(e.target.value) }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>اسم الجامعة (توثيق داخلي)</Label>
+              <Input placeholder="اسم الجامعة" value={editForm.university_name} onChange={(e) => setEditForm(f => ({ ...f, university_name: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
