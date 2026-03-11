@@ -508,6 +508,10 @@ function ManagementDashboard({ secret }: { secret: string }) {
               <Label>السعر</Label>
               <Input type="number" value={editForm.price} onChange={(e) => setEditForm(f => ({ ...f, price: Number(e.target.value) }))} />
             </div>
+            <div className="space-y-2">
+              <Label>اسم الجامعة (توثيق داخلي)</Label>
+              <Input placeholder="اسم الجامعة" value={editForm.university_name} onChange={(e) => setEditForm(f => ({ ...f, university_name: e.target.value }))} />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>تاريخ البداية</Label>
