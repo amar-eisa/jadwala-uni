@@ -235,6 +235,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
           price: editForm.price,
           start_date: editForm.start_date?.toISOString() || null,
           end_date: editForm.end_date?.toISOString() || null,
+          university_name: editForm.university_name || null,
         },
       });
       toast.success('تم تحديث الاشتراك');
