@@ -321,7 +321,8 @@ serve(async (req) => {
       let scheduledThisRound = 0;
       
       for (const day of sortedDays) {
-        if (round < 10 && sessionsPerDay[day] >= targetPerDay) continue;
+        // Enforce targetPerDay strictly in early rounds, relax only in late rounds
+        if (round < 40 && sessionsPerDay[day] >= targetPerDay) continue;
         
         const daySlots = slotsByDay[day] || [];
         if (daySlots.length === 0) continue;
