@@ -381,6 +381,9 @@ function ManagementDashboard({ secret }: { secret: string }) {
                       <p className="text-sm text-muted-foreground">{user.email}</p>
                       {user.phone && <p className="text-sm text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /><span dir="ltr">{user.phone}</span></p>}
                     </div>
+                    {user.subscription?.university_name && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Building2 className="h-3 w-3" />{user.subscription.university_name}</p>
+                    )}
                     <div className="flex flex-wrap gap-1.5">
                       {user.subscription && <Badge variant={STATUS_LABELS[user.subscription.status]?.variant || 'default'}>{STATUS_LABELS[user.subscription.status]?.label || user.subscription.status}</Badge>}
                       <Badge variant="outline">{PLAN_OPTIONS.find(p => p.value === user.subscription?.plan_name)?.label || user.subscription?.plan_name}</Badge>
