@@ -1,0 +1,1 @@
+ALTER TABLE public.subscriptions ADD COLUMN university_name text DEFAULT null;
