@@ -411,6 +411,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
                       <th className="text-right p-2 font-medium">الهاتف</th>
                       <th className="text-right p-2 font-medium">الحالة</th>
                       <th className="text-right p-2 font-medium">الخطة</th>
+                      <th className="text-right p-2 font-medium">الجامعة</th>
                       <th className="text-right p-2 font-medium">الدور</th>
                       <th className="text-right p-2 font-medium">التاريخ</th>
                       <th className="text-right p-2 font-medium">إجراءات</th>
