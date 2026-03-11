@@ -263,6 +263,7 @@ function ManagementDashboard({ secret }: { secret: string }) {
       price: user.subscription?.price || 0,
       start_date: user.subscription?.start_date ? new Date(user.subscription.start_date) : null,
       end_date: user.subscription?.end_date ? new Date(user.subscription.end_date) : null,
+      university_name: user.subscription?.university_name || '',
     });
   };
 
