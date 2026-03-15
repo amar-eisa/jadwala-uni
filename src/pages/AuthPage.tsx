@@ -143,9 +143,9 @@ export default function AuthPage() {
             </div>
 
             <Tabs defaultValue="login" className="w-full" onValueChange={() => setError(null)}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">تسجيل الدخول</TabsTrigger>
-                <TabsTrigger value="signup">إنشاء حساب</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 h-12 rounded-2xl bg-muted/60 p-1">
+                <TabsTrigger value="login" className="rounded-xl h-full text-sm font-medium data-[state=active]:bg-gradient-to-l data-[state=active]:from-primary data-[state=active]:to-[hsl(210,70%,40%)] data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">تسجيل الدخول</TabsTrigger>
+                <TabsTrigger value="signup" className="rounded-xl h-full text-sm font-medium data-[state=active]:bg-gradient-to-l data-[state=active]:from-primary data-[state=active]:to-[hsl(210,70%,40%)] data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">إنشاء حساب</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
