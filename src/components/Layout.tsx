@@ -17,7 +17,9 @@ import {
   Phone,
   Mail,
   BarChart3,
-  Activity
+  Activity,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,7 @@ import jadwalaLogo from '@/assets/jadwala-logo.png';
 import connectLogo from '@/assets/connect-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
@@ -57,6 +60,9 @@ function UserAvatar({ name }: { name: string }) {
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar-collapsed') === 'true';
+  });
   const { user, signOut } = useAuth();
   const { data: isAdmin } = useIsAdmin();
   const { data: userSettings } = useUserSettings();
@@ -92,226 +98,308 @@ export function Layout({ children }: { children: React.ReactNode }) {
     await signOut();
   };
 
+  const toggleCollapse = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    localStorage.setItem('sidebar-collapsed', String(next));
+  };
+
   const displayName = user?.user_metadata?.full_name || user?.email || '';
 
   return (
-    <div className="min-h-screen mesh-bg flex flex-col" dir="rtl">
-      {/* Brand strip */}
-      <div className="brand-strip w-full fixed top-0 z-[60]" />
+    <TooltipProvider delayDuration={300}>
+      <div className="min-h-screen mesh-bg flex flex-col" dir="rtl">
+        {/* Brand strip */}
+        <div className="brand-strip w-full fixed top-0 z-[60]" />
 
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-4 right-4 z-50 w-72 sidebar-glass text-sidebar-foreground rounded-3xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col overflow-hidden",
-          "mt-2",
-          sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity"
+            onClick={() => setSidebarOpen(false)}
+          />
         )}
-      >
-        {/* Geometric pattern overlay */}
-        <div className="absolute inset-0 geo-pattern pointer-events-none" />
 
-        {/* Logo Header */}
-        <div className="relative flex flex-col px-6 py-4 border-b border-sidebar-border/30 bg-gradient-to-l from-sidebar-accent/50 to-transparent">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Logo with glow */}
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-primary/20 blur-lg animate-pulse-soft" />
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed inset-y-4 right-4 z-50 sidebar-glass text-sidebar-foreground rounded-3xl transform transition-all duration-300 ease-in-out lg:translate-x-0 flex flex-col overflow-hidden",
+            "mt-2",
+            sidebarCollapsed ? "lg:w-[72px]" : "lg:w-72",
+            "w-72",
+            sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+          )}
+        >
+          {/* Geometric pattern overlay */}
+          <div className="absolute inset-0 geo-pattern pointer-events-none" />
+
+          {/* Logo Header */}
+          <div className="relative flex flex-col px-4 py-4 border-b border-sidebar-border/30 bg-gradient-to-l from-sidebar-accent/50 to-transparent">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-lg animate-pulse-soft" />
+                  <img 
+                    src={jadwalaLogo} 
+                    alt="جدولة" 
+                    className="h-10 w-auto relative z-10"
+                  />
+                </div>
+                {!sidebarCollapsed && (
+                  <div>
+                    <h1 className="text-lg font-bold text-sidebar-foreground">جدولة</h1>
+                    <p className="text-[10px] text-sidebar-foreground/40">Jadwala System</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                {/* Collapse toggle - desktop only */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hidden lg:flex text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8"
+                  onClick={toggleCollapse}
+                >
+                  {sidebarCollapsed ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+            
+            {/* شعار الجامعة المخصص */}
+            {!sidebarCollapsed && (userSettings?.university_name || userSettings?.university_logo_url) && (
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-sidebar-border/50">
+                {userSettings?.university_logo_url && (
+                  <img 
+                    src={`${userSettings.university_logo_url}?t=${Date.now()}`}
+                    alt="شعار الجامعة" 
+                    className="h-8 w-8 object-contain rounded"
+                  />
+                )}
+                {userSettings?.university_name && (
+                  <span className="text-xs text-sidebar-foreground/70">
+                    {userSettings.university_name}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Glass separator with gold accent */}
+          <div className="mx-4 h-px bg-gradient-to-l from-transparent via-primary/30 to-transparent" />
+
+          {/* Navigation */}
+          <nav className={cn(
+            "relative flex-1 flex flex-col gap-1 overflow-y-auto",
+            sidebarCollapsed ? "p-2" : "p-4"
+          )}>
+            <LayoutGroup>
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.href;
+                const count = item.countKey ? counts[item.countKey] : null;
+                
+                const linkContent = (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "relative flex items-center rounded-2xl text-sm font-medium transition-colors duration-200 group",
+                      sidebarCollapsed ? "justify-center px-2 py-3" : "justify-between px-4 py-3",
+                      isActive
+                        ? "text-primary-foreground"
+                        : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-pill"
+                        className="absolute inset-0 bg-gradient-to-l from-primary to-[hsl(205,78%,40%)] rounded-2xl nav-glow"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    {!isActive && (
+                      <motion.div
+                        className="absolute inset-0 rounded-2xl bg-sidebar-accent/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        layoutId={undefined}
+                      />
+                    )}
+                    <div className="relative z-10 flex items-center gap-3">
+                      <div className={cn(
+                        "p-2 rounded-xl transition-colors shrink-0",
+                        isActive 
+                          ? "bg-primary-foreground/20" 
+                          : "bg-sidebar-accent group-hover:bg-sidebar-accent"
+                      )}>
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      {!sidebarCollapsed && <span>{item.name}</span>}
+                    </div>
+                    {!sidebarCollapsed && count !== null && count > 0 && (
+                      <span className={cn(
+                        "relative z-10 px-2 py-0.5 text-xs rounded-full font-medium",
+                        isActive 
+                          ? "bg-primary-foreground/20 text-primary-foreground" 
+                          : "bg-sidebar-accent text-sidebar-foreground/70"
+                      )}>
+                        {count}
+                      </span>
+                    )}
+                  </Link>
+                );
+
+                if (sidebarCollapsed) {
+                  return (
+                    <Tooltip key={item.name}>
+                      <TooltipTrigger asChild>
+                        {linkContent}
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="font-medium">
+                        <span>{item.name}</span>
+                        {count !== null && count > 0 && (
+                          <span className="mr-2 text-muted-foreground">({count})</span>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return linkContent;
+              })}
+            </LayoutGroup>
+          </nav>
+
+          {/* User Info & Sign Out */}
+          <div className={cn(
+            "relative mt-auto border-t border-sidebar-border shrink-0",
+            sidebarCollapsed ? "p-2" : "p-4"
+          )}>
+            {user && (
+              <div className={cn(
+                "bg-sidebar-accent/80 rounded-2xl backdrop-blur-sm",
+                sidebarCollapsed ? "p-2 flex flex-col items-center gap-2" : "p-4 space-y-3"
+              )}>
+                {sidebarCollapsed ? (
+                  <>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div><UserAvatar name={displayName} /></div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="font-medium">{user.user_metadata?.full_name || user.email}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <ThemeToggle />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-border rounded-xl h-8 w-8"
+                          onClick={handleSignOut}
+                        >
+                          <LogOut className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">تسجيل الخروج</TooltipContent>
+                    </Tooltip>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <UserAvatar name={displayName} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-sidebar-foreground truncate">
+                          {user.user_metadata?.full_name || user.email}
+                        </p>
+                        {user.user_metadata?.full_name && (
+                          <p className="text-[11px] text-sidebar-foreground/50 truncate">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <ThemeToggle />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-border rounded-xl"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="h-4 w-4 ml-2" />
+                      تسجيل الخروج
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <div className={cn(
+          "flex-1 flex flex-col transition-all duration-300",
+          sidebarCollapsed ? "lg:pr-24" : "lg:pr-80"
+        )}>
+          {/* Mobile header */}
+          <header className="sticky top-[3px] z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 shadow-sm">
+            <div className="flex items-center gap-2 lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                className="hover:bg-muted"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-2">
                 <img 
                   src={jadwalaLogo} 
                   alt="جدولة" 
-                  className="h-10 w-auto relative z-10"
+                  className="h-8 w-auto"
                 />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-sidebar-foreground">جدولة</h1>
-                <p className="text-[10px] text-sidebar-foreground/40">Jadwala System</p>
+                <h1 className="text-lg font-bold">جدولة</h1>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          
-          {/* شعار الجامعة المخصص */}
-          {(userSettings?.university_name || userSettings?.university_logo_url) && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-sidebar-border/50">
-              {userSettings?.university_logo_url && (
-                <img 
-                  src={`${userSettings.university_logo_url}?t=${Date.now()}`}
-                  alt="شعار الجامعة" 
-                  className="h-8 w-8 object-contain rounded"
-                />
-              )}
-              {userSettings?.university_name && (
-                <span className="text-xs text-sidebar-foreground/70">
-                  {userSettings.university_name}
-                </span>
-              )}
+            <div className="flex items-center gap-2 mr-auto lg:mr-0">
+              <NotificationBell />
             </div>
-          )}
-        </div>
+          </header>
 
-        {/* Glass separator with gold accent */}
-        <div className="mx-4 h-px bg-gradient-to-l from-transparent via-primary/30 to-transparent" />
+          <main className="flex-1 p-8 lg:p-10 pt-6 animate-fade-in">{children}</main>
 
-        {/* Navigation */}
-        <nav className="relative flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
-          <LayoutGroup>
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.href;
-              const count = item.countKey ? counts[item.countKey] : null;
-              
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "relative flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition-colors duration-200 group",
-                    isActive
-                      ? "text-primary-foreground"
-                      : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
-                  )}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-pill"
-                      className="absolute inset-0 bg-gradient-to-l from-primary to-[hsl(205,78%,40%)] rounded-2xl nav-glow"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  {!isActive && (
-                    <motion.div
-                      className="absolute inset-0 rounded-2xl bg-sidebar-accent/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      layoutId={undefined}
-                    />
-                  )}
-                  <div className="relative z-10 flex items-center gap-3">
-                    <div className={cn(
-                      "p-2 rounded-xl transition-colors",
-                      isActive 
-                        ? "bg-primary-foreground/20" 
-                        : "bg-sidebar-accent group-hover:bg-sidebar-accent"
-                    )}>
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    <span>{item.name}</span>
-                  </div>
-                  {count !== null && count > 0 && (
-                    <span className={cn(
-                      "relative z-10 px-2 py-0.5 text-xs rounded-full font-medium",
-                      isActive 
-                        ? "bg-primary-foreground/20 text-primary-foreground" 
-                        : "bg-sidebar-accent text-sidebar-foreground/70"
-                    )}>
-                      {count}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </LayoutGroup>
-        </nav>
-
-        {/* User Info & Sign Out — Mini profile card */}
-        <div className="relative mt-auto p-4 border-t border-sidebar-border shrink-0">
-          {user && (
-            <div className="bg-sidebar-accent/80 rounded-2xl p-4 space-y-3 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <UserAvatar name={displayName} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-sidebar-foreground truncate">
-                    {user.user_metadata?.full_name || user.email}
-                  </p>
-                  {user.user_metadata?.full_name && (
-                    <p className="text-[11px] text-sidebar-foreground/50 truncate">
-                      {user.email}
-                    </p>
-                  )}
+          {/* Footer */}
+          <footer className="relative border-t border-border/50 footer-pattern">
+            <div className="lg:px-10 px-6 py-5">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <img src={connectLogo} alt="Connect" className="h-6 w-auto opacity-60" />
+                  <span className="text-xs text-muted-foreground">
+                    جميع الحقوق محفوظة لـ Connect © {new Date().getFullYear()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <a href="mailto:jadwala@connectsys.cloud" className="flex items-center gap-1 hover:text-foreground transition-colors">
+                    <Mail className="h-3 w-3" />
+                    jadwala@connectsys.cloud
+                  </a>
+                  <a href="tel:+249128150105" className="flex items-center gap-1 hover:text-foreground transition-colors" dir="ltr">
+                    <Phone className="h-3 w-3" />
+                    +249128150105
+                  </a>
                 </div>
               </div>
-              <ThemeToggle />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-border rounded-xl"
-                onClick={handleSignOut}
-              >
-                <LogOut className="h-4 w-4 ml-2" />
-                تسجيل الخروج
-              </Button>
             </div>
-          )}
+          </footer>
         </div>
-      </aside>
-
-      {/* Main content */}
-      <div className="lg:pr-80 flex-1 flex flex-col">
-        {/* Mobile header */}
-        <header className="sticky top-[3px] z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 shadow-sm">
-          <div className="flex items-center gap-2 lg:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="hover:bg-muted"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <img 
-                src={jadwalaLogo} 
-                alt="جدولة" 
-                className="h-8 w-auto"
-              />
-              <h1 className="text-lg font-bold">جدولة</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 mr-auto lg:mr-0">
-            <NotificationBell />
-          </div>
-        </header>
-
-        <main className="flex-1 p-8 lg:p-10 pt-6 animate-fade-in">{children}</main>
-
-        {/* Footer */}
-        <footer className="relative border-t border-border/50 footer-pattern">
-          <div className="lg:px-10 px-6 py-5">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <img src={connectLogo} alt="Connect" className="h-6 w-auto opacity-60" />
-                <span className="text-xs text-muted-foreground">
-                  جميع الحقوق محفوظة لـ Connect © {new Date().getFullYear()}
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <a href="mailto:jadwala@connectsys.cloud" className="flex items-center gap-1 hover:text-foreground transition-colors">
-                  <Mail className="h-3 w-3" />
-                  jadwala@connectsys.cloud
-                </a>
-                <a href="tel:+249128150105" className="flex items-center gap-1 hover:text-foreground transition-colors" dir="ltr">
-                  <Phone className="h-3 w-3" />
-                  +249128150105
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
