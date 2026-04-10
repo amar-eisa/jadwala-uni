@@ -154,14 +154,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex items-center gap-1">
                 {/* Collapse toggle - desktop only */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hidden lg:flex text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8"
-                  onClick={toggleCollapse}
-                >
-                  {sidebarCollapsed ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "hidden lg:flex items-center justify-center rounded-xl h-8 w-8 transition-all duration-200",
+                        "text-sidebar-foreground/60 hover:text-primary hover:bg-primary/10",
+                        "border border-transparent hover:border-primary/20",
+                        sidebarCollapsed && "bg-primary/10 text-primary border-primary/20"
+                      )}
+                      onClick={toggleCollapse}
+                    >
+                      <motion.div
+                        animate={{ rotate: sidebarCollapsed ? 180 : 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </motion.div>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    {sidebarCollapsed ? 'توسيع القائمة' : 'طي القائمة'}
+                  </TooltipContent>
+                </Tooltip>
                 <Button
                   variant="ghost"
                   size="icon"
