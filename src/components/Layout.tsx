@@ -244,7 +244,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 </div>
               </div>
-              <ThemeToggle />
+              
               <Button
                 variant="ghost"
                 size="sm"
@@ -282,6 +282,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2 mr-auto lg:mr-0">
+            <ThemeToggle />
             <NotificationBell />
           </div>
         </header>
