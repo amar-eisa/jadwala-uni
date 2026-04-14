@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScheduleEntry } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
+import { trackScheduleCreated, trackScheduleCleared, trackScheduleEntryMoved } from '@/lib/amplitude';
 
 export function useScheduleEntries(scheduleId?: string | null) {
   return useQuery({
@@ -55,6 +56,7 @@ export function useGenerateSchedule(onReport?: (report: any) => void) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
+      trackScheduleCreated({ scheduled: data.scheduled, total: data.total });
       if (data?.report && onReport) {
         onReport(data.report);
       }
@@ -103,6 +105,7 @@ export function useClearSchedule() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
+      trackScheduleCleared();
       toast({ title: 'تم مسح الجدول بنجاح' });
     },
     onError: (error) => {
@@ -139,6 +142,7 @@ export function useMoveScheduleEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
+      trackScheduleEntryMoved();
       toast({ title: 'تم نقل المحاضرة بنجاح' });
     },
     onError: (error) => {

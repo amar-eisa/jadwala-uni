@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { trackPageView } from '@/lib/amplitude';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -104,6 +105,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const displayName = user?.user_metadata?.full_name || user?.email || '';
+
+  // Track page views
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
 
   // Close more menu on outside click
   useEffect(() => {
