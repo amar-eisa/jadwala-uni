@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { identifyUser, resetUser, trackLogin, trackSignup, trackLogout } from '@/lib/amplitude';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
@@ -75,8 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Sentry user identification
         if (currentSession?.user) {
           Sentry.setUser({ id: currentSession.user.id, email: currentSession.user.email });
+          identifyUser(currentSession.user.id, {
+            email: currentSession.user.email,
+            full_name: currentSession.user.user_metadata?.full_name,
+          });
         } else {
           Sentry.setUser(null);
+          resetUser();
         }
         
         setInitialized(true);
@@ -154,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Success - reset attempts
       setLoginAttempts(0);
       setLockoutUntil(null);
+      trackLogin();
       return { error: null };
     } catch (err) {
       return { error: err as Error };
@@ -189,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Failed to send WhatsApp notification:', err);
       });
 
+      trackSignup();
       toast({
         title: 'تم إنشاء الحساب بنجاح',
         description: 'حسابك في انتظار موافقة المدير',
@@ -201,8 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    trackLogout();
     await supabase.auth.signOut();
     Sentry.setUser(null);
+    resetUser();
     setNeedsPhone(false);
     toast({
       title: 'تم تسجيل الخروج',

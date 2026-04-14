@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logActivity } from '@/hooks/useActivityLog';
 import { sendScheduleNotification } from '@/hooks/useNotifications';
+import { trackScheduleSaved } from '@/lib/amplitude';
 
 export interface SavedSchedule {
   id: string;
@@ -94,6 +95,7 @@ export function useSaveSchedule() {
       queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
       queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
       queryClient.invalidateQueries({ queryKey: ['activity_logs'] });
+      trackScheduleSaved();
       toast({ title: 'تم حفظ الجدول بنجاح' });
     },
     onError: (error) => {
