@@ -1,6 +1,6 @@
 import * as amplitude from '@amplitude/analytics-browser';
 
-const AMPLITUDE_API_KEY = import.meta.env.VITE_AMPLITUDE_API_KEY || '';
+const AMPLITUDE_API_KEY = import.meta.env.VITE_AMPLITUDE_API_KEY || '14a81d93f09ab5c90d60cbaba8336039';
 
 export function initAmplitude() {
   if (!AMPLITUDE_API_KEY) {
