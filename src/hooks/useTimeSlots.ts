@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 export function useTimeSlots() {
   return useQuery({
     queryKey: ['time_slots'],
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('time_slots')

@@ -36,7 +36,16 @@ const StudentAuthPage = lazy(() => import("./pages/student/StudentAuthPage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
 const StudentProfilePage = lazy(() => import("./pages/student/StudentProfilePage"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function LazyFallback() {
   return (

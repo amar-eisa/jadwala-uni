@@ -7,6 +7,7 @@ import { logActivity } from '@/hooks/useActivityLog';
 export function useStudentGroups() {
   return useQuery({
     queryKey: ['student_groups'],
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('student_groups')

@@ -7,6 +7,7 @@ import { trackScheduleCreated, trackScheduleCleared, trackScheduleEntryMoved } f
 export function useScheduleEntries(scheduleId?: string | null) {
   return useQuery({
     queryKey: ['schedule_entries', scheduleId ?? 'draft'],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       let query = supabase
         .from('schedule_entries')

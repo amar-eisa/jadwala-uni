@@ -18,6 +18,7 @@ export function useNotifications(groupId?: string | null) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
+    staleTime: 1 * 60 * 1000,
     queryKey: ['notifications', groupId],
     queryFn: async () => {
       let q = supabase
