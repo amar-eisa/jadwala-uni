@@ -1,51 +1,51 @@
 
 
-## إعداد Amplitude Analytics في التطبيق
+## تحسين التخزين المؤقت (Caching) للنظام
 
-### الفكرة
-دمج Amplitude SDK لتتبع جميع الأحداث المهمة: المصادقة، التنقل، وعمليات الجداول الدراسية.
+### الوضع الحالي
+النظام يستخدم `React Query` لكن **بدون أي إعدادات تخزين مؤقت** — `QueryClient` مُعرّف بدون خيارات، مما يعني:
+- كل مرة تفتح صفحة يُعاد جلب البيانات من الخادم
+- البيانات تُعتبر "قديمة" فوراً (`staleTime: 0`)
+- الاستثناء الوحيد: `useSubscription` عنده `staleTime: 30000`
 
-### الخطوات
+### الخطة
 
-**1. تخزين API Key بأمان**
-- مفتاح Amplitude هو مفتاح عام (publishable key)، لذا سيتم تخزينه مباشرة في الكود كـ environment variable
-- سنطلب منك إدخاله عبر أداة الأسرار
+**1. إعداد QueryClient بخيارات تخزين ذكية (`src/App.tsx`)**
+```typescript
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,      // 5 دقائق — البيانات تُعتبر حديثة
+      gcTime: 10 * 60 * 1000,         // 10 دقائق — تبقى في الذاكرة
+      refetchOnWindowFocus: false,     // لا إعادة جلب عند العودة للتبويب
+      retry: 1,                        // محاولة واحدة فقط عند الفشل
+    },
+  },
+});
+```
 
-**2. تثبيت `@amplitude/analytics-browser`**
+**2. تخصيص staleTime حسب نوع البيانات في كل hook:**
 
-**3. إنشاء ملف `src/lib/amplitude.ts`** — وحدة مركزية للتحليلات:
-- دالة `initAmplitude()` لتهيئة SDK
-- دالة `trackEvent(name, properties)` للتتبع
-- دوال مخصصة لكل نوع حدث:
-  - `trackLogin()` / `trackLogout()` / `trackSignup()`
-  - `trackPageView(pageName)`
-  - `trackScheduleCreate()` / `trackScheduleEdit()` / `trackScheduleSave()`
-  - `identifyUser(userId, properties)` لربط الأحداث بالمستخدم
+| البيانات | staleTime | السبب |
+|----------|-----------|-------|
+| القاعات، المجموعات، الدكاترة، المواد | 10 دقائق | بيانات مرجعية نادراً ما تتغير |
+| الفترات الزمنية | 10 دقائق | نفس السبب |
+| الجدول الدراسي | 2 دقيقة | يتغير أكثر لكن ليس كل ثانية |
+| الاشتراك | 30 ثانية (موجود) | حالة حساسة |
+| الإشعارات | 1 دقيقة | تحتاج تحديث متكرر نسبياً |
 
-**4. تعديل `src/main.tsx`** — استدعاء `initAmplitude()` عند بدء التطبيق
+**3. الملفات المتأثرة:**
+- `src/App.tsx` — إعدادات QueryClient الافتراضية
+- `src/hooks/useRooms.ts` — staleTime: 10 دقائق
+- `src/hooks/useProfessors.ts` — staleTime: 10 دقائق
+- `src/hooks/useStudentGroups.ts` — staleTime: 10 دقائق
+- `src/hooks/useSubjects.ts` — staleTime: 10 دقائق
+- `src/hooks/useTimeSlots.ts` — staleTime: 10 دقائق
+- `src/hooks/useSchedule.ts` — staleTime: 2 دقيقة
+- `src/hooks/useNotifications.ts` — staleTime: 1 دقيقة
 
-**5. تعديل `src/contexts/AuthContext.tsx`** — تتبع أحداث المصادقة:
-- عند تسجيل الدخول: `trackLogin()`
-- عند تسجيل الخروج: `trackLogout()`
-- عند إنشاء حساب: `trackSignup()`
-- عند تغيير المستخدم: `identifyUser()`
-
-**6. تعديل `src/components/Layout.tsx`** — تتبع التنقل:
-- إضافة `useEffect` مع `useLocation()` لتتبع كل تغيير صفحة تلقائياً
-
-**7. تعديل hooks الجداول** — تتبع العمليات:
-- `useSchedule.ts`: تتبع إنشاء/تعديل/حذف الجداول
-- `useSavedSchedules.ts`: تتبع حفظ الجداول
-
-### الأحداث المتتبعة
-
-| الحدث | الوقت |
-|-------|-------|
-| `user_login` | عند تسجيل الدخول بنجاح |
-| `user_signup` | عند إنشاء حساب جديد |
-| `user_logout` | عند تسجيل الخروج |
-| `page_view` | عند كل تنقل بين الصفحات |
-| `schedule_created` | عند إنشاء جدول |
-| `schedule_saved` | عند حفظ جدول |
-| `schedule_exported` | عند تصدير جدول |
+### النتيجة المتوقعة
+- التنقل بين الصفحات يصبح **فورياً** (البيانات محملة مسبقاً)
+- عدد طلبات الخادم ينخفض بنسبة ~70%
+- البيانات تتحدث تلقائياً بعد انتهاء مدة الصلاحية
 
