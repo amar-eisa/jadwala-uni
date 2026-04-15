@@ -7,6 +7,7 @@ import { logActivity } from '@/hooks/useActivityLog';
 export function useSubjects() {
   return useQuery({
     queryKey: ['subjects'],
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('subjects')
