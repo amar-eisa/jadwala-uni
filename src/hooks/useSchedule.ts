@@ -141,12 +141,37 @@ export function useMoveScheduleEntry() {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ entryId, newTimeSlotId, newRoomId }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['schedule_entries'] });
+      
+      // Snapshot all schedule_entries queries
+      const previousQueries = queryClient.getQueriesData<ScheduleEntry[]>({ queryKey: ['schedule_entries'] });
+      
+      // Optimistically update all matching queries
+      queryClient.setQueriesData<ScheduleEntry[]>(
+        { queryKey: ['schedule_entries'] },
+        (old) => old?.map(entry => 
+          entry.id === entryId 
+            ? { ...entry, time_slot_id: newTimeSlotId, room_id: newRoomId }
+            : entry
+        )
+      );
+      
+      return { previousQueries };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule_entries'] });
       trackScheduleEntryMoved();
       toast({ title: 'تم نقل المحاضرة بنجاح' });
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
+      // Rollback on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast({ 
         title: 'خطأ في نقل المحاضرة', 
         description: error.message, 

@@ -134,12 +134,21 @@ export function useActivateSchedule() {
 
       await logActivity('activated', 'schedule', scheduleId, { name: schedule.name });
 
-      // Send notification to students if schedule has a group
       if (schedule.group_id) {
         await sendScheduleNotification(schedule.group_id, schedule.name);
       }
       
       return schedule as SavedSchedule;
+    },
+    onMutate: async (scheduleId) => {
+      await queryClient.cancelQueries({ queryKey: ['saved_schedules'] });
+      const previous = queryClient.getQueryData<SavedSchedule[]>(['saved_schedules']);
+      
+      queryClient.setQueryData<SavedSchedule[]>(['saved_schedules'], (old) =>
+        old?.map(s => ({ ...s, is_active: s.id === scheduleId }))
+      );
+      
+      return { previous };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saved_schedules'] });
@@ -147,7 +156,10 @@ export function useActivateSchedule() {
       queryClient.invalidateQueries({ queryKey: ['activity_logs'] });
       toast({ title: 'تم تفعيل الجدول' });
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['saved_schedules'], context.previous);
+      }
       toast({ title: 'خطأ في تفعيل الجدول', description: error.message, variant: 'destructive' });
     },
   });
