@@ -19,7 +19,7 @@ import {
   Activity,
   MoreHorizontal
 } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRooms } from '@/hooks/useRooms';
 import { useProfessors } from '@/hooks/useProfessors';
@@ -27,6 +27,8 @@ import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useUserSettings } from '@/hooks/useUserSettings';
@@ -40,6 +42,52 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+
+// Prefetch config: map routes to their query keys and fetch functions
+const prefetchMap: Record<string, { queryKey: string[]; queryFn: () => Promise<any> }[]> = {
+  '/rooms': [{
+    queryKey: ['rooms'],
+    queryFn: async () => {
+      const { data } = await supabase.from('rooms').select('*');
+      return data;
+    },
+  }],
+  '/professors': [{
+    queryKey: ['professors'],
+    queryFn: async () => {
+      const { data } = await supabase.from('professors').select('*');
+      return data;
+    },
+  }],
+  '/groups': [{
+    queryKey: ['student_groups'],
+    queryFn: async () => {
+      const { data } = await supabase.from('student_groups').select('*');
+      return data;
+    },
+  }],
+  '/subjects': [{
+    queryKey: ['subjects'],
+    queryFn: async () => {
+      const { data } = await supabase.from('subjects').select('*, professor:professors(*), group:student_groups(*)');
+      return data;
+    },
+  }],
+  '/time-slots': [{
+    queryKey: ['time_slots'],
+    queryFn: async () => {
+      const { data } = await supabase.from('time_slots').select('*');
+      return data;
+    },
+  }],
+  '/timetable': [{
+    queryKey: ['schedule_entries', 'draft'],
+    queryFn: async () => {
+      const { data } = await supabase.from('schedule_entries').select('*, room:rooms(*), time_slot:time_slots(*), subject:subjects(*, professor:professors(*), group:student_groups(*))').is('schedule_id', null);
+      return data;
+    },
+  }],
+};
 
 const primaryNav = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
@@ -78,6 +126,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const { data: isAdmin } = useIsAdmin();
   const { data: userSettings } = useUserSettings();
+
+  const queryClient = useQueryClient();
+
+  const handlePrefetch = useCallback((href: string) => {
+    const queries = prefetchMap[href];
+    if (!queries) return;
+    queries.forEach(({ queryKey, queryFn }) => {
+      queryClient.prefetchQuery({ queryKey, queryFn, staleTime: 5 * 60 * 1000 });
+    });
+  }, [queryClient]);
 
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
@@ -241,6 +299,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <TooltipTrigger asChild>
                           <Link
                             to={item.href}
+                            onMouseEnter={() => handlePrefetch(item.href)}
                             className={cn(
                               "relative flex items-center justify-center rounded-xl p-2 sm:p-2.5 transition-colors duration-200",
                               isActive
@@ -313,6 +372,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           <Link
                             key={item.name}
                             to={item.href}
+                            onMouseEnter={() => handlePrefetch(item.href)}
                             onClick={() => setMoreOpen(false)}
                             className={cn(
                               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
