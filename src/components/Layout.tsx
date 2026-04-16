@@ -19,7 +19,7 @@ import {
   Activity,
   MoreHorizontal
 } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRooms } from '@/hooks/useRooms';
 import { useProfessors } from '@/hooks/useProfessors';
@@ -27,6 +27,8 @@ import { useStudentGroups } from '@/hooks/useStudentGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTimeSlots } from '@/hooks/useTimeSlots';
 import { useScheduleEntries } from '@/hooks/useSchedule';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useUserSettings } from '@/hooks/useUserSettings';
