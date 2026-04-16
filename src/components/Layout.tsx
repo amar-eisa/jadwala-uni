@@ -299,6 +299,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <TooltipTrigger asChild>
                           <Link
                             to={item.href}
+                            onMouseEnter={() => handlePrefetch(item.href)}
                             className={cn(
                               "relative flex items-center justify-center rounded-xl p-2 sm:p-2.5 transition-colors duration-200",
                               isActive
