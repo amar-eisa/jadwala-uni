@@ -372,6 +372,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           <Link
                             key={item.name}
                             to={item.href}
+                            onMouseEnter={() => handlePrefetch(item.href)}
                             onClick={() => setMoreOpen(false)}
                             className={cn(
                               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
