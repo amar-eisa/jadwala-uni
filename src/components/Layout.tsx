@@ -127,6 +127,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: isAdmin } = useIsAdmin();
   const { data: userSettings } = useUserSettings();
 
+  const queryClient = useQueryClient();
+
+  const handlePrefetch = useCallback((href: string) => {
+    const queries = prefetchMap[href];
+    if (!queries) return;
+    queries.forEach(({ queryKey, queryFn }) => {
+      queryClient.prefetchQuery({ queryKey, queryFn, staleTime: 5 * 60 * 1000 });
+    });
+  }, [queryClient]);
+
   const { data: rooms } = useRooms();
   const { data: professors } = useProfessors();
   const { data: groups } = useStudentGroups();
