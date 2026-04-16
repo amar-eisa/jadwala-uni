@@ -43,6 +43,52 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+// Prefetch config: map routes to their query keys and fetch functions
+const prefetchMap: Record<string, { queryKey: string[]; queryFn: () => Promise<any> }[]> = {
+  '/rooms': [{
+    queryKey: ['rooms'],
+    queryFn: async () => {
+      const { data } = await supabase.from('rooms').select('*');
+      return data;
+    },
+  }],
+  '/professors': [{
+    queryKey: ['professors'],
+    queryFn: async () => {
+      const { data } = await supabase.from('professors').select('*');
+      return data;
+    },
+  }],
+  '/groups': [{
+    queryKey: ['student_groups'],
+    queryFn: async () => {
+      const { data } = await supabase.from('student_groups').select('*');
+      return data;
+    },
+  }],
+  '/subjects': [{
+    queryKey: ['subjects'],
+    queryFn: async () => {
+      const { data } = await supabase.from('subjects').select('*, professor:professors(*), group:student_groups(*)');
+      return data;
+    },
+  }],
+  '/time-slots': [{
+    queryKey: ['time_slots'],
+    queryFn: async () => {
+      const { data } = await supabase.from('time_slots').select('*');
+      return data;
+    },
+  }],
+  '/timetable': [{
+    queryKey: ['schedule_entries', 'draft'],
+    queryFn: async () => {
+      const { data } = await supabase.from('schedule_entries').select('*, room:rooms(*), time_slot:time_slots(*), subject:subjects(*, professor:professors(*), group:student_groups(*))').is('schedule_id', null);
+      return data;
+    },
+  }],
+};
+
 const primaryNav = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, countKey: null },
   { name: 'القاعات', href: '/rooms', icon: DoorOpen, countKey: 'rooms' },
